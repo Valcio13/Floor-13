@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CONTAINER_SCARE_ASSET, CONTAINER_SCARE_VARIANT_ASSETS, ENEMY_ASSET_MANIFEST, CRAWLER_WALK_CYCLE_DURATION_MS, CRAWLER_WALK_FRAME_RATE, LAMP_JUMPSCARE_ASSET, LAMP_JUMPSCARE_VARIANT_ASSETS, MIMIC_REVEAL_PULSE_DURATION_MS, ambusherWarningAlpha, containerScareAssetForSearchIndex, crawlerMovedBetween, crawlerPresentationPhaseOffsetMs, crawlerTextureKeyForPresentation, lampJumpscareAssetForEvent, mimicRevealPulseScale, watcherGazeAudioPosition, watcherGazeEyeAlpha, watcherTextureKey, ambusherTextureKey, mimicTextureKey } from '../src/game/enemyAssets';
+import { CONTAINER_SCARE_ASSET, CONTAINER_SCARE_VARIANT_ASSETS, ENEMY_ASSET_MANIFEST, CRAWLER_NEARBY_CUE_COOLDOWN_TICKS, CRAWLER_WALK_CYCLE_DURATION_MS, CRAWLER_WALK_FRAME_RATE, LAMP_JUMPSCARE_ASSET, LAMP_JUMPSCARE_VARIANT_ASSETS, MIMIC_REVEAL_PULSE_DURATION_MS, MIMIC_REVEALED_DISPLAY_SCALE, ambusherWarningAlpha, containerScareAssetForSearchIndex, crawlerMovedBetween, crawlerPresentationPhaseOffsetMs, crawlerTextureKeyForPresentation, enemyEyeGlowAlpha, lampJumpscareAssetForEvent, mimicRevealPulseScale, watcherGazeAudioPosition, watcherGazeEyeAlpha, watcherTextureKey, ambusherTextureKey, mimicTextureKey } from '../src/game/enemyAssets';
 import { AuthoritativeSimulation, FIXED_SCALE } from '../src/core/authoritativeSimulation';
 import { NARRATIVE_ASSET_MANIFEST, victoryExteriorScale } from '../src/game/narrativeAssets';
 import { resultHandoffReady, shouldBeginVictoryEpilogue, VICTORY_EPILOGUE } from '../src/game/contestUx';
@@ -82,10 +82,18 @@ describe('remaining authored Block 13 visual assets', () => {
     expect(watcherGazeEyeAlpha(true, true, 0)).toBe(0.34);
     expect(watcherGazeEyeAlpha(true, true, 1)).toBe(0.78);
     expect(MIMIC_REVEAL_PULSE_DURATION_MS).toBe(300);
-    expect(mimicRevealPulseScale(0)).toBe(1.2);
-    expect(mimicRevealPulseScale(50)).toBeGreaterThan(1.25);
-    expect(mimicRevealPulseScale(150)).toBeLessThan(1.2);
-    expect(mimicRevealPulseScale(300)).toBe(1.2);
+    expect(MIMIC_REVEALED_DISPLAY_SCALE).toBe(1.45);
+    expect(mimicRevealPulseScale(0)).toBe(MIMIC_REVEALED_DISPLAY_SCALE);
+    expect(mimicRevealPulseScale(50)).toBeGreaterThan(1.5);
+    expect(mimicRevealPulseScale(150)).toBeLessThan(MIMIC_REVEALED_DISPLAY_SCALE);
+    expect(mimicRevealPulseScale(300)).toBe(MIMIC_REVEALED_DISPLAY_SCALE);
+    expect(enemyEyeGlowAlpha(false, 1)).toBe(0);
+    expect(enemyEyeGlowAlpha(true, 0)).toBe(0.2);
+    expect(enemyEyeGlowAlpha(true, 1)).toBe(0.86);
+  });
+
+  it('keeps nearby crawler scrape cues occasional on the fixed presentation clock', () => {
+    expect(CRAWLER_NEARBY_CUE_COOLDOWN_TICKS).toBe(108);
   });
 
   it('targets one gaze cue only when an already-active Watcher enters the authoritative gaze cone', () => {

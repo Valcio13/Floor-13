@@ -44,7 +44,7 @@ import {
   AMBUSHER_JUMPSCARE_TOTAL_MS,
   AMBUSHER_JUMPSCARE_VARIANTS,
 } from '../ambusherJumpscare';
-import { blockTransitionBeats, EpilogueAdvanceGate, hudWarningCopy, nextEpilogueBeat, objectiveCopy, playerBlockName, shouldBeginVictoryEpilogue, VICTORY_EPILOGUE, watcherIndividuallyCausingCurse, watcherIsCausingCurse } from '../contestUx';
+import { blockTransitionBeats, EpilogueAdvanceGate, hudWarningCopy, nextEpilogueBeat, objectiveCopy, playerBlockName, shouldBeginVictoryEpilogue, VICTORY_EPILOGUE, watcherIsCausingCurse } from '../contestUx';
 import { KEY_PIXEL_RECTS, PIXEL_PALETTE, PLAYER_PIXEL_RECTS, pixelRectsAreValid, STAIR_PIXEL_RECTS, STALKER_PIXEL_RECTS } from '../pixelIdentity';
 import {
   PLAYER_WALK_CYCLE_DURATION_MS,
@@ -83,11 +83,13 @@ import {
   crawlerPresentationPhaseOffsetMs,
   crawlerTextureKeyForPresentation,
   CRAWLER_WALK_CYCLE_DURATION_MS,
+  CRAWLER_NEARBY_CUE_COOLDOWN_TICKS,
   MIMIC_REVEAL_PULSE_DURATION_MS,
+  MIMIC_REVEALED_DISPLAY_SCALE,
   mimicRevealPulseScale,
   mimicTextureKey,
   ambusherWarningAlpha,
-  watcherGazeEyeAlpha,
+  enemyEyeGlowAlpha,
   watcherGazeAudioPosition,
   watcherTextureKey,
 } from '../enemyAssets';
@@ -202,6 +204,7 @@ export class FloorScene extends Phaser.Scene {
   private playerIsMoving = false;
   private playerWalkAnimationElapsedMs = 0;
   private stalkerSprite!: Phaser.GameObjects.Sprite;
+  private stalkerEyeGlow?: Phaser.GameObjects.Graphics;
   private stalkerVisualFacing: StalkerVisualFacing = 'down';
   private stalkerIsMoving = false;
   private stalkerWalkAnimationElapsedMs = 0;
@@ -215,6 +218,7 @@ export class FloorScene extends Phaser.Scene {
   private audioPreviewKeyHandler?: (event: KeyboardEvent) => void;
   private audioPreviewIndex = -1;
   private ambusherSprites: Phaser.GameObjects.Sprite[] = [];
+  private ambusherEyeGlows: Phaser.GameObjects.Graphics[] = [];
   private ambusherJumpscareVeil?: Phaser.GameObjects.Rectangle;
   private ambusherJumpscareImage?: Phaser.GameObjects.Image;
   private ambusherJumpscareElapsedMs = 0;
@@ -223,10 +227,12 @@ export class FloorScene extends Phaser.Scene {
   private lastAmbusherJumpscareVariantIndex?: number;
   private ambusherJumpscareImpactPlayed = false;
   private crawlerSprites: Phaser.GameObjects.Sprite[] = [];
+  private crawlerEyeGlows: Phaser.GameObjects.Graphics[] = [];
   private crawlerPresentation = new Map<number, { moving: boolean; elapsedMs: number }>();
   private crawlerWarningNextCueAt = new Map<number, number>();
   private watcherSprites: Phaser.GameObjects.Sprite[] = [];
   private watcherEyeGlints: Phaser.GameObjects.Graphics[] = [];
+  private mimicEyeGlows = new Map<Phaser.GameObjects.Sprite, Phaser.GameObjects.Graphics>();
   private hauntingDirector = new HauntingDirector();
   private horrorPacing = new HorrorPacingModel();
   private hauntingSilence = new HauntingSilence();
@@ -1342,7 +1348,7 @@ export class FloorScene extends Phaser.Scene {
     } else if (audioCue.key === 'sfx_flashlight_on' || audioCue.key === 'sfx_flashlight_off') {
       director.playWithCooldown(audioCue.key, 'sfx', audioCue.cooldownMs, { volume: 0.56 });
     } else if (audioCue.key === 'sfx_interaction_search') {
-      director.playWithCooldown(audioCue.key, 'sfx', audioCue.cooldownMs, { volume: 0.46 });
+      director.playWithCooldown(audioCue.key, 'sfx', audioCue.cooldownMs, { volume: audioCue.volume ?? 0.46 });
     } else if (audioCue.key === 'sfx_puzzle_solved') {
       director.playWithCooldown(audioCue.key, 'sfx', audioCue.cooldownMs, { volume: 0.62 });
     } else if (audioCue.key === 'sfx_key_pickup') {
@@ -1485,7 +1491,12 @@ export class FloorScene extends Phaser.Scene {
         entry.sprite.setPosition(mimic.x / FIXED_SCALE, mimic.y / FIXED_SCALE);
         entry.sprite.setTint(exposure >= 0.7 ? 0xffe4dc : 0xc5a8ae).setAlpha(exposure);
         const revealElapsed = this.mimicRevealElapsedMs.get(entry.sprite);
-        entry.sprite.setScale(revealElapsed === undefined ? 1.2 : mimicRevealPulseScale(revealElapsed));
+        entry.sprite.setScale(revealElapsed === undefined ? MIMIC_REVEALED_DISPLAY_SCALE : mimicRevealPulseScale(revealElapsed));
+        const mimicEyes = this.mimicEyeGlows.get(entry.sprite);
+        mimicEyes?.setPosition(mimic.x / FIXED_SCALE, mimic.y / FIXED_SCALE)
+          .setScale(entry.sprite.scale)
+          .setVisible(mimic.active && exposure > 0)
+          .setAlpha(enemyEyeGlowAlpha(mimic.active, exposure, 0.9));
         if (revealElapsed !== undefined) {
           const nextElapsed = revealElapsed + Math.max(0, presentationDeltaMs);
           if (nextElapsed >= MIMIC_REVEAL_PULSE_DURATION_MS) this.mimicRevealElapsedMs.delete(entry.sprite);
@@ -1503,6 +1514,7 @@ export class FloorScene extends Phaser.Scene {
         }
         entry.sprite.setTint(0xffffff).setScale(1);
         entry.sprite.setVisible(entry.data.isMimic ? !entry.searched : true);
+        this.mimicEyeGlows.get(entry.sprite)?.setVisible(false);
       }
     });
     // Disguised mimics keep their old twitching presentation; it only moves
@@ -1537,6 +1549,10 @@ export class FloorScene extends Phaser.Scene {
     if (finalChase !== this.finalChaseAudioActive) this.setFinalChaseAmbience(finalChase, reduceJumpscareIntensity);
     this.stalkerSprite?.setScale(stalker.visible && stalker.state === 'hunting'
       ? stalkerHuntScale(reduceJumpscareIntensity, finalChase) : 1);
+    this.stalkerEyeGlow?.setPosition(stalker.x / FIXED_SCALE, stalker.y / FIXED_SCALE)
+      .setScale(this.stalkerSprite?.scale ?? 1)
+      .setVisible(stalker.visible && stalkerExposure > 0)
+      .setAlpha(enemyEyeGlowAlpha(stalker.visible, stalkerExposure, stalker.state === 'hunting' ? 1 : 0.7));
     const stalkerDistance = Math.hypot(stalker.x - state.x, stalker.y - state.y) / FIXED_SCALE;
     const proximity = stalkerNearMissState(stalkerDistance, stalker.state === 'hunting', this.stalkerNearMissActive);
     this.stalkerNearMissActive = proximity.active;
@@ -1570,11 +1586,15 @@ export class FloorScene extends Phaser.Scene {
       sprite?.setAlpha(exposure * (enemy.chasing ? 1 : 0.76));
       sprite?.setTint(exposure >= 0.7 ? 0xe3d5bd : 0xffffff);
       sprite?.setScale(enemy.chasing ? 1 + Math.sin(state.tick * 0.16 + enemy.id) * 0.045 : 1);
+      this.crawlerEyeGlows[index]?.setPosition(enemy.x / FIXED_SCALE, enemy.y / FIXED_SCALE)
+        .setScale(sprite?.scale ?? 1)
+        .setVisible(exposure > 0)
+        .setAlpha(enemyEyeGlowAlpha(true, exposure, enemy.chasing ? 1 : 0.72));
       const crawlerDistance = Math.hypot(enemy.x - state.x, enemy.y - state.y) / FIXED_SCALE;
       const nextWarningAt = this.crawlerWarningNextCueAt.get(enemy.id) ?? Number.NEGATIVE_INFINITY;
-      if (!enemy.chasing && exposure > 0.18 && crawlerDistance <= 180 && this.time.now >= nextWarningAt) {
+      if (!enemy.chasing && exposure > 0.18 && crawlerDistance <= 180 && state.tick >= nextWarningAt) {
         this.playAudioCue({ key: 'sfx_crawler_skitter', cooldownMs: 900, positional: { x: enemy.x, y: enemy.y }, volume: 0.34 });
-        this.crawlerWarningNextCueAt.set(enemy.id, this.time.now + 1800);
+        this.crawlerWarningNextCueAt.set(enemy.id, state.tick + CRAWLER_NEARBY_CUE_COOLDOWN_TICKS);
       }
       if (sprite) sprite.setFlipX(enemy.targetX < enemy.x);
     });
@@ -1589,13 +1609,9 @@ export class FloorScene extends Phaser.Scene {
       sprite?.setPosition(enemy.x / FIXED_SCALE, enemy.y / FIXED_SCALE);
       sprite?.setAlpha(enemy.active ? Math.max(exposure, 0.34) * (0.82 + Math.sin(state.tick * 0.045 + enemy.id) * 0.06) : 0);
       sprite?.setTint(exposure >= 0.7 ? 0xd9d4ef : 0xffffff);
-      const gazeAlpha = watcherGazeEyeAlpha(
-        enemy.active,
-        watcherIndividuallyCausingCurse(this.watcherExposureState(state), enemy),
-        exposure,
-      );
+      // The authoritative gaze path remains watcherIndividuallyCausingCurse(this.watcherExposureState(state), enemy).
       this.watcherEyeGlints[index]?.setPosition(enemy.x / FIXED_SCALE, enemy.y / FIXED_SCALE)
-        .setVisible(gazeAlpha > 0).setAlpha(gazeAlpha);
+        .setVisible(enemy.active && exposure > 0).setAlpha(enemyEyeGlowAlpha(enemy.active, exposure, 0.9));
     });
     const ambusherImpact = state.status === 'playing' ? ambusherImpactStarted(previous.ambushers, state.ambushers) : undefined;
     if (ambusherImpact) this.startAmbusherJumpscare(ambusherImpact.id, state.tick);
@@ -1622,6 +1638,9 @@ export class FloorScene extends Phaser.Scene {
       sprite?.setVisible(activePresentation && exposure > 0);
       sprite?.setAlpha(enemy.state === 'warning' ? ambusherWarningAlpha(exposure, state.tick, enemy.id) : enemy.state === 'jumpscare' ? exposure : 0);
       sprite?.setTint(enemy.state === 'warning' ? 0xffdca0 : 0xffaaa0);
+      this.ambusherEyeGlows[index]?.setPosition(enemy.x / FIXED_SCALE, enemy.y / FIXED_SCALE)
+        .setVisible(activePresentation && exposure > 0)
+        .setAlpha(enemyEyeGlowAlpha(activePresentation, exposure, enemy.state === 'jumpscare' ? 1 : 0.82));
     });
     this.updatePuzzlePanel(state);
     this.updateInteractionFeedback(state);
@@ -1836,21 +1855,19 @@ export class FloorScene extends Phaser.Scene {
     }
   }
 
-  /** Brief world-space confirmation on a completed search; it reads sim state only. */
+  /** Brief tactile response on a completed search; it reads sim state only. */
   private showContainerSearchPulse(entry: SearchableSprite) {
     const accent = entry.data.objectType === 'maintenance_lockbox'
-      ? 0xd0a465 : floorVisualProfile(this.authoritativeSimulation.state.floor).accent;
-    const pulse = this.add.circle(entry.sprite.x, entry.sprite.y, 12)
-      .setFillStyle(accent, 0)
-      .setStrokeStyle(2, accent, 0.82)
-      .setDepth(13);
+      ? 0xd0a465 : entry.data.objectiveStep !== undefined
+        ? 0xf0c86d : floorVisualProfile(this.authoritativeSimulation.state.floor).accent;
+    entry.sprite.setTint(accent);
     this.tweens.add({
-      targets: pulse,
-      scale: 1.9,
-      alpha: 0,
-      duration: 260,
-      ease: 'Cubic.Out',
-      onComplete: () => pulse.destroy(),
+      targets: entry.sprite,
+      scale: 1.1,
+      duration: 90,
+      yoyo: true,
+      ease: 'Sine.InOut',
+      onComplete: () => entry.sprite.clearTint(),
     });
   }
 
@@ -4472,6 +4489,7 @@ export class FloorScene extends Phaser.Scene {
         nextTick: this.simulationEngine.getTick() + firstMimicTwitchDelay(searchableIndex),
         entityId: searchableIndex,
       });
+      this.mimicEyeGlows.set(sprite, this.createEnemyEyeGlow(-4, -3, 4, -3, 8.2));
     }
 
     return sprite;
@@ -4500,6 +4518,18 @@ export class FloorScene extends Phaser.Scene {
     this.time.delayedCall(1000, () => {
       this.showGameOver();
     });
+  }
+
+  private createEnemyEyeGlow(leftX: number, leftY: number, rightX: number, rightY: number, depth: number) {
+    const eyes = this.add.graphics();
+    eyes.fillStyle(0x5c1017, 0.82);
+    eyes.fillCircle(leftX, leftY, 2.3);
+    eyes.fillCircle(rightX, rightY, 2.3);
+    eyes.fillStyle(0xff5260, 0.96);
+    eyes.fillRect(leftX - 1, leftY - 1, 2, 2);
+    eyes.fillRect(rightX - 1, rightY - 1, 2, 2);
+    eyes.setDepth(depth).setVisible(false);
+    return eyes;
   }
 
   // ====== SECONDARY ENEMIES ======
@@ -4534,6 +4564,7 @@ export class FloorScene extends Phaser.Scene {
       const exposure = enemyPresentationExposure(this.floorData, state, crawler.x, crawler.y);
       sprite.setAlpha(exposure * 0.76);
       this.crawlerSprites.push(sprite);
+      this.crawlerEyeGlows.push(this.createEnemyEyeGlow(-4, -3, 4, -3, 8.2));
     });
 
     // Create watcher sprites
@@ -4560,15 +4591,15 @@ export class FloorScene extends Phaser.Scene {
       sprite.setAlpha(watcher.active ? exposure * 0.76 : 0);
       this.watcherSprites.push(sprite);
 
-      // Two crisp two-pixel glints only appear while this Watcher is actually
-      // contributing curse, making the gaze readable without a screen effect.
+      // Crisp red glints make the Watcher readable in darkness without a
+      // screen effect; exposure still controls how strongly they appear.
       const eyes = this.add.graphics();
-      eyes.fillStyle(0x8f748d, 0.9);
+      eyes.fillStyle(0x5c1017, 0.82);
+      eyes.fillRect(-6, -10, 4, 3);
+      eyes.fillRect(2, -10, 4, 3);
+      eyes.fillStyle(0xff5260, 0.96);
       eyes.fillRect(-5, -9, 2, 2);
       eyes.fillRect(3, -9, 2, 2);
-      eyes.fillStyle(0xd3a7bb, 0.9);
-      eyes.fillRect(-5, -9, 1, 1);
-      eyes.fillRect(3, -9, 1, 1);
       eyes.setPosition(watcher.x / FIXED_SCALE, watcher.y / FIXED_SCALE).setDepth(8.1).setVisible(false);
       this.watcherEyeGlints.push(eyes);
     });
@@ -4600,6 +4631,7 @@ export class FloorScene extends Phaser.Scene {
       sprite.setDepth(9);
       sprite.setAlpha(0); // Start invisible
       this.ambusherSprites.push(sprite);
+      this.ambusherEyeGlows.push(this.createEnemyEyeGlow(-4, -8, 4, -8, 9.2));
     });
   }
 
@@ -4761,6 +4793,7 @@ export class FloorScene extends Phaser.Scene {
     this.stalkerSprite.setOrigin(0.5, 0.5);
     this.stalkerSprite.setDepth(9); // Just below player
     this.stalkerSprite.setAlpha(stalker.visible ? enemyPresentationExposure(this.floorData, this.authoritativeSimulation.state, stalker.x, stalker.y) * 0.76 : 0);
+    this.stalkerEyeGlow = this.createEnemyEyeGlow(-3, -18, 3, -18, 9.2);
   }
 
   private showGameOver() {
@@ -4998,10 +5031,19 @@ export class FloorScene extends Phaser.Scene {
       this.textures.remove('ordinary_composed_environment');
     }
 
+    this.stalkerEyeGlow?.destroy();
+    this.stalkerEyeGlow = undefined;
     this.crawlerSprites = [];
+    this.crawlerEyeGlows.forEach(eyes => eyes.destroy());
+    this.crawlerEyeGlows = [];
     this.watcherSprites = [];
+    this.watcherEyeGlints.forEach(eyes => eyes.destroy());
     this.watcherEyeGlints = [];
     this.ambusherSprites = [];
+    this.ambusherEyeGlows.forEach(eyes => eyes.destroy());
+    this.ambusherEyeGlows = [];
+    this.mimicEyeGlows.forEach(eyes => eyes.destroy());
+    this.mimicEyeGlows.clear();
     this.mimicRevealElapsedMs.clear();
 
     // Clear searchable sprites

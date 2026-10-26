@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AuthoritativeSimulation } from '../src/core/authoritativeSimulation';
+import { AuthoritativeSimulation, FIXED_SCALE, FLASHLIGHT_DRAIN_SUBUNITS_PER_TICK } from '../src/core/authoritativeSimulation';
 
 function shortestPathTiles(tiles: boolean[][], from: [number, number], to: [number, number]): number {
   const width = tiles[0]?.length ?? 0;
@@ -36,7 +36,7 @@ describe('deterministic battery pressure measurements', () => {
       tiles += shortestPathTiles(map.tiles, map.puzzleDevice, map.exit);
       // At 160 px/s and 32 px tiles, this is the maximum continuous-light
       // estimate. It intentionally ignores combat pauses and detours.
-      estimates.push((tiles * 0.2) * (240 / 256));
+      estimates.push((tiles * 0.2) * (FLASHLIGHT_DRAIN_SUBUNITS_PER_TICK * 60 / FIXED_SCALE));
     }
     const sorted = [...estimates].sort((a, b) => a - b);
     const percentile = (p: number) => sorted[Math.floor((sorted.length - 1) * p)];
@@ -49,4 +49,14 @@ describe('deterministic battery pressure measurements', () => {
     expect(estimates).toHaveLength(640);
     expect(estimates.every(value => Number.isFinite(value) && value >= 0)).toBe(true);
   }, 15_000);
+
+  it('can reach zero from a full charge under continuous deterministic flashlight use', () => {
+    const sim = new AuthoritativeSimulation(0x1313n, { crawlers: [], watchers: [], ambushers: [], mimics: [] });
+    sim.step({ left: false, right: false, up: false, down: false, flashlight: true, interact: false });
+    for (let tick = 1; tick < (100 * FIXED_SCALE) / FLASHLIGHT_DRAIN_SUBUNITS_PER_TICK; tick++) {
+      sim.step({ left: false, right: false, up: false, down: false, flashlight: false, interact: false });
+    }
+    expect(sim.state.battery).toBe(0);
+    expect(sim.state.flashlightOn).toBe(false);
+  });
 });

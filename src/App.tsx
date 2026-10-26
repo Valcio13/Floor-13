@@ -11,6 +11,7 @@ import { useCompleteRun } from './web3/hooks';
 import { submitRunCompletion } from './web3/tx2Completion';
 import type { Hash } from 'viem';
 import { wagmiConfig } from './web3/wagmi';
+import { hemiNetwork, type HemiNetworkName, networkDisplayName } from './web3/config';
 import type { RunState } from './core/run';
 import { RUN_RECOVERY_STORAGE_KEY, createRunCheckpoint, hashAuthoritativeState, parseRunCheckpoint, serializeRunCheckpoint, validateRunRecovery, type ValidatedRunRecovery } from './core/runRecovery';
 import { InputRecorder, InputReplayer } from './core/inputRecorder';
@@ -58,6 +59,8 @@ function GameApp() {
   const [completionPhase, setCompletionPhase] = useState<'idle' | 'wallet' | 'submitted' | 'confirmed' | 'failed'>('idle');
   const [completionError, setCompletionError] = useState<string | null>(null);
   const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
+  const [creditsOpen, setCreditsOpen] = useState(false);
+  const [selectedNetwork, setSelectedNetwork] = useState<HemiNetworkName>(hemiNetwork.name);
   const [recovery, setRecovery] = useState<ValidatedRunRecovery | null>(null);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [transactionPending, setTransactionPending] = useState<string | null>(null);
@@ -72,9 +75,9 @@ function GameApp() {
   const startInProgressRef = useRef(false);
   const confirmedRunCountdownGateRef = useRef(new ConfirmedRunCountdownGate());
 
-  const { address, chain, isConnected, isCorrectNetwork, connectWallet, switchToHemi, isConnecting, connectError, isSwitching, switchError } = useWallet();
-  const { startRun, error: startError } = useStartRun();
-  const { completeRun } = useCompleteRun();
+  const { address, chain, isConnected, isCorrectNetwork, connectWallet, switchToHemi, isConnecting, connectError, isSwitching, switchError } = useWallet(selectedNetwork);
+  const { startRun, error: startError } = useStartRun(selectedNetwork);
+  const { completeRun } = useCompleteRun(selectedNetwork);
   const closeAudioSettings = useCallback(() => setAudioSettingsOpen(false), []);
   const markPreparationStage = (stage: RunPreparationStageId, stageStatus: RunPreparationStageStatus) => {
     setPreparationStages(current => updateRunPreparationStage(current, stage, stageStatus));
@@ -330,7 +333,7 @@ function GameApp() {
     if (!runState?.manifest || localStorage.getItem(TX2_PENDING_KEY) || localStorage.getItem(TX1_PENDING_KEY)) return;
     const blockReason = tx2SubmissionBlockReason(runState.manifest, {
       connected: isConnected, address, chainId: chain?.id,
-    }, false);
+    }, false, selectedNetwork);
     if (blockReason) {
       setCompletionError(blockReason);
       return;
@@ -507,11 +510,12 @@ function GameApp() {
     status === 'starting' || isConnecting || isSwitching,
     false,
   );
+  const selectedHemiLabel = networkDisplayName(selectedNetwork);
   const hemiLabel = status === 'starting' && startPhase !== 'idle'
     ? onchainStartupCopy(startPhase as Exclude<MenuStartPhase, 'idle'>)
     : menuActions.hemi === 'busy' ? isConnecting ? 'CONNECTING WALLET…' : isSwitching ? 'SWITCHING TO HEMI…' : 'STARTING HEMI RUN…'
         : menuActions.hemi === 'connect' ? 'CONNECT WALLET FOR HEMI'
-          : menuActions.hemi === 'switch-network' ? 'SWITCH TO HEMI TESTNET' : 'PLAY ON HEMI';
+        : menuActions.hemi === 'switch-network' ? `SWITCH TO HEMI ${selectedHemiLabel}` : 'PLAY ON HEMI';
 
   return (
     <main className="app-shell menu-shell">
@@ -529,7 +533,11 @@ function GameApp() {
             <p className="choice-kicker">PRIMARY RUN</p>
             <button type="button" aria-live="polite" onClick={beginRun} disabled={menuActions.hemi === 'busy' || !!transactionPending}>{hemiLabel}</button>
             <p>Create a verifiable run on Hemi, then record the result and replay commitment after the run.</p>
-            {isConnected && <p className={`network-state ${isCorrectNetwork ? 'is-ready' : 'is-warning'}`}>{isCorrectNetwork ? '● HEMI TESTNET READY' : '● SWITCH TO HEMI TESTNET TO CONTINUE'}</p>}
+            {isConnected && <p className={`network-state ${isCorrectNetwork ? 'is-ready' : 'is-warning'}`}>{isCorrectNetwork ? `● HEMI ${selectedHemiLabel} READY` : `● SWITCH TO HEMI ${selectedHemiLabel} TO CONTINUE`}</p>}
+            <div className="network-options" aria-label="Available Hemi networks">
+              <button type="button" className={`network-option ${selectedNetwork === 'testnet' ? 'is-active' : ''}`} onClick={() => setSelectedNetwork('testnet')}> {selectedNetwork === 'testnet' ? '●' : '○'} HEMI TESTNET</button>
+              <button type="button" className={`network-option ${selectedNetwork === 'mainnet' ? 'is-active' : ''}`} onClick={() => setSelectedNetwork('mainnet')}> {selectedNetwork === 'mainnet' ? '●' : '○'} HEMI MAINNET</button>
+            </div>
           </section>
           <section className="run-choice run-choice-secondary">
             <p className="choice-kicker">DEVELOPMENT / PRACTICE</p>
@@ -539,6 +547,7 @@ function GameApp() {
         </div>
 
         <button type="button" className="menu-settings-button" onClick={() => setAudioSettingsOpen(true)}>AUDIO SETTINGS</button>
+        <button type="button" className="menu-credits-button" onClick={() => setCreditsOpen(true)}>CREDITS &amp; ATTRIBUTION</button>
 
         {recoveryError && <div role="alert" className="menu-error">
           <p>Saved run recovery stopped safely: {recoveryError}</p>
@@ -559,9 +568,36 @@ function GameApp() {
           <p className="menu-error" role="alert">{error || (startError ? startupErrorCopy(startError) : null) || (connectError ? startupErrorCopy(connectError) : null) || (switchError ? startupErrorCopy(switchError) : null)}</p>
         )}
         {status === 'starting' && startPhase !== 'idle' && <span className="sr-only" role="status">{onchainStartupCopy(startPhase as Exclude<MenuStartPhase, 'idle'>)}</span>}
-        {isConnected && !isCorrectNetwork && <p className="network-note">PLAY LOCAL is ready now. Hemi runs require Hemi Testnet.</p>}
+        {isConnected && !isCorrectNetwork && <p className="network-note">PLAY LOCAL is ready now. Hemi runs require Hemi {selectedHemiLabel}.</p>}
       </section>
       {audioSettingsOpen && <AudioSettingsPanel onClose={closeAudioSettings} />}
+      {creditsOpen && (
+        <div className="credits-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setCreditsOpen(false); }}>
+          <section className="credits-panel" role="dialog" aria-modal="true" aria-labelledby="credits-title">
+            <header className="credits-header">
+              <div>
+                <p className="credits-eyebrow">FLOOR 13 // PRODUCTION NOTES</p>
+                <h2 id="credits-title">CREDITS &amp; ATTRIBUTION</h2>
+              </div>
+              <button type="button" className="credits-close" onClick={() => setCreditsOpen(false)} aria-label="Close credits">CLOSE</button>
+            </header>
+            <div className="credits-body">
+              <h3>FLOOR 13</h3>
+              <p>An independent psychological survival-horror game about forgotten records, impossible architecture, and the building that never existed.</p>
+              <h3>Audio</h3>
+              <p>Processed music and sound effects are credited in the project license record. Third-party audio is used under the applicable Pixabay Content License or CC0 source license.</p>
+              <ul>
+                <li><a href="https://pixabay.com/music/scary-childrens-tunes-scary-halloween-617002/" target="_blank" rel="noreferrer">Scary Halloween — Dmitrii Spis (NastelBom)</a></li>
+                <li><a href="https://opengameart.org/content/dark-sci-fi-audio-pack" target="_blank" rel="noreferrer">Dark Sci-Fi Audio Pack — SRG774 (CC0)</a></li>
+                <li><a href="https://opengameart.org/content/lost-in-a-bad-place-horror-ambience-loop" target="_blank" rel="noreferrer">Lost in a Bad Place — congusbongus (CC0)</a></li>
+              </ul>
+              <h3>Technology</h3>
+              <p>Built with Phaser, React, TypeScript, Vite, and viem. Hemi run verification uses the RunRegistry contract and wallet connection supplied by the Hemi network.</p>
+              <p className="credits-note">Full source pages, creators, processing notes, and license details are retained in <strong>AUDIO_LICENSES.md</strong> and <strong>docs/audio/THIRD_PARTY_AUDIO.md</strong>.</p>
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   );
 }

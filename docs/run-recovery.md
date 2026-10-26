@@ -21,9 +21,9 @@ The state digest detects accidental corruption and implementation drift; browser
 
 ## Protocol and wallet behavior
 
-The current client resumes only Hemi checkpoints carrying the current `0.6.7` game version and `floor13-procedural-puzzles-floor-progression-v8-valid-floor4-combination-digits` rules hash. Unfinished older-rule runs are not replayed under changed simulation rules. Historical onchain manifests and records remain unchanged; there is no migration of an old active run into a new TX1.
+The current client resumes only Hemi checkpoints carrying the current `0.6.7` game version and `floor13-procedural-puzzles-floor-progression-v9-global-horror-feedback-balance` rules hash. Unfinished older-rule runs are not replayed under changed simulation rules. Historical onchain manifests and records remain unchanged; there is no migration of an old active run into a new TX1.
 
-An onchain run's original manifest and run ID are preserved. Recovery never starts another TX1 or submits TX2. If refresh occurs while a TX1 or TX2 wallet request/receipt is unresolved, a pending marker blocks another Hemi transaction. The client does not claim to know whether it mined and does not resend automatically. The user must inspect the Hemi explorer and explicitly clear the marker after checking. Wallet account and Hemi Testnet chain are checked before TX2. Confirmed TX2 is recorded by run ID so a recovered terminal screen will not offer another completion.
+An onchain run's original manifest and run ID are preserved. Recovery never starts another TX1 or submits TX2. If refresh occurs while a TX1 or TX2 wallet request/receipt is unresolved, a pending marker blocks another Hemi transaction. The client does not claim to know whether it mined and does not resend automatically. The user must inspect the Hemi explorer and explicitly clear the marker after checking. Wallet account and the selected Hemi chain are checked before TX2. Confirmed TX2 is recorded by run ID so a recovered terminal screen will not offer another completion.
 
 This deliberately safe fallback does not query the registry to resolve unknown pending transaction status automatically. The pending-state UI and explorer confirmation remain part of release manual QA.
 

@@ -32,4 +32,17 @@ describe('release narrative and presentation polish', () => {
     expect(puzzles).toContain("const ordinals = ['FIRST', 'SECOND', 'THIRD'];");
     expect(puzzles).toContain('LOCK CODE // ${ordinals[index]} POSITION');
   });
+
+  it('exposes credits and keeps source attribution in the repository', () => {
+    expect(app).toContain('CREDITS &amp; ATTRIBUTION');
+    expect(app).toContain('AUDIO_LICENSES.md');
+    expect(readFileSync(new URL('../CREDITS.md', import.meta.url), 'utf8')).toContain('Scary Halloween');
+  });
+
+  it('lets the Hemi run menu select either supported network', () => {
+    expect(app).toContain("setSelectedNetwork('testnet')");
+    expect(app).toContain("setSelectedNetwork('mainnet')");
+    expect(app).toContain('useStartRun(selectedNetwork)');
+    expect(app).toContain('useCompleteRun(selectedNetwork)');
+  });
 });

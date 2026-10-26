@@ -1,142 +1,93 @@
-# Floor 13 — The Building That Never Existed
+# Floor 13: The Building That Never Existed
 
-Floor 13 is a psychological survival horror game built for the **Hemi Arcade Contest 2: Turbo Edition**. An unknown message brings the protagonist to a building erased from official records. The current project is **deterministic and auditable**: a Phaser-free simulation owns gameplay outcomes, and recorded inputs can be replayed against that simulation.
+**A pixel-art psychological survival horror game about an abandoned apartment building, forgotten records, and a floor that should not exist.**
 
-> **Verification status:** TX2 stores the player's result and canonical replay hashes. It does not independently prove that gameplay was honestly executed. No verifier, backend, or signing service is implemented.
+An unknown message sends the player to the fourth floor. Explore the building's four real floors, recover evidence, solve procedural investigations, manage a failing flashlight, and survive the descent to the impossible Floor 13.
 
-## Gameplay
+## What you do
 
-The route is:
+- Explore connected, procedurally generated apartment floors.
+- Search containers for evidence, supplies, and clues.
+- Solve a distinct deterministic puzzle on each floor.
+- Read recovered records in the field-notes notebook.
+- Manage health, curse, flashlight battery, and enemy encounters.
+- Face the Stalker, Crawler, Watcher, Ambusher, and Mimic.
+- Finish local runs offline or create an on-chain Hemi run record with explicit wallet transactions.
 
-**Floor 4 → Floor 3 → Floor 2 → Floor 1 → Floor 13 → Outside**
+The normal route is **Floor 4 → Floor 3 → Floor 2 → Floor 1 → Floor 13 → Outside**. The story's major revelations and ending are intentionally kept out of this README.
 
-Explore the building, search for evidence and supplies, and solve the distinct investigation on each floor. Floors 4 and 3 grant progression keys when their puzzles are solved; Floors 2, 1, and 13 unlock their next route directly through their completed puzzle objectives. The Floor 13 finale has no physical key pickup.
+## Controls
 
-### Controls
+| Input | Action |
+| --- | --- |
+| `WASD` / arrow keys | Move |
+| `F` | Toggle flashlight |
+| `E` | Interact with containers, evidence, keys, stairs, and puzzle devices |
+| `Tab` | Open the field-notes notebook while playing |
+| `Escape` | Pause or close the current panel |
 
-- **WASD** or **arrow keys:** move
-- **F:** toggle flashlight
-- **E:** interact with containers, keys, and stairs
-- **Escape:** pause
-- **Tab:** open the field-notes notebook while playing
+Audio settings and Reduced Jumpscare Intensity are available from the menu and pause screen. Reduced intensity changes presentation only; it does not change simulation timing, damage, or outcomes.
 
-Audio and accessibility settings are available from the main menu and pause
-menu. Volume, mute, and **Reduce Jumpscare Intensity** preferences are saved
-in this browser. The intensity option changes the rendered flash, camera
-kick, and scale punch only; it does not change warning timing or outcomes.
+## Hemi integration
 
-### Gameplay systems
+Hemi runs bind a player's run to a TX1 manifest containing the game identity and public entropy references. After completion, TX2 records the submitted score, outcome, terminal tick, and hashes of the canonical `InputLogV2` and `FinalStateV1` payloads.
 
-- Procedurally generated connected floor layouts and deterministic search results
-- Health, battery, curse, invulnerability, and score systems
-- Stalker pursuit, Crawler chase/contact, Watcher curse, Ambusher warnings, and Mimic encounters
-- Corruption events and gameplay scare lockouts
-- Archive objective and stair progression from Floor 4 through Floor 13 to Outside
-- Phaser lighting, enemy sprites, HUD, audio, camera effects, and scare visuals
+The current contract stores player-submitted commitments. It does **not** independently verify that gameplay was honestly executed, validate the score, or provide an off-chain verifier.
 
-## Deterministic architecture
+Both networks are supported through the same wallet flow:
 
-`AuthoritativeSimulation` is a pure TypeScript gameplay layer that does not construct Phaser. It owns movement, static tile collisions, interactions, enemies, resources, loot, progression, score, and terminal state. Gameplay advances on a **fixed 60 Hz tick**. Gameplay-critical positions and resources use integer fixed-point values: 256 subpixels per world pixel, with integer movement remainders and documented truncation rules. The simulation engine carries tick backlog rather than discarding simulation time.
+| Network | Chain ID | RPC | Explorer |
+| --- | ---: | --- | --- |
+| Hemi Testnet | `743111` | `https://testnet.rpc.hemi.network/rpc` | [Explorer](https://testnet.explorer.hemi.xyz) |
+| Hemi Mainnet | `43111` | `https://rpc.hemi.network/rpc` | [Explorer](https://explorer.hemi.xyz) |
 
-Resource values remain exact in simulation state. The HUD and transition rewards display percentages rounded to the nearest whole number, with exact halves rounded up; display formatting never changes authoritative battery or curse.
+The selected network and matching public RunRegistry address are configured with `VITE_HEMI_NETWORK`, `VITE_HEMI_TESTNET_CONTRACT_ADDRESS`, and `VITE_HEMI_MAINNET_CONTRACT_ADDRESS`. The repository contains configured addresses, but explorer verification and release deployment status must be confirmed separately before claiming a production deployment.
 
-World generation, economy, events, and gameplay subsystems use separated deterministic PCG32 streams. Cosmetic effects are presentation-only and do not decide gameplay. Phaser samples live keyboard input through `InputSource`, sends the resulting inputs into the simulation, and renders simulation snapshots. Replay uses `InputReplayer` as the same input source for the same simulation path.
+## Run locally
 
-`InputLogV2` stores canonical binary input events and the terminal simulation tick. Its canonical hash is Ethereum Keccak-256 over the binary log. `FinalStateV1` is a compact canonical result containing run binding, terminal tick, outcome, score, progression, and final resources; it does not hash the internal simulation snapshot. See [ARCHITECTURE.md](ARCHITECTURE.md), [INPUT_LOG_V2_SPEC.md](INPUT_LOG_V2_SPEC.md), [FINAL_STATE_V1_SPEC.md](FINAL_STATE_V1_SPEC.md), and [run recovery behavior](docs/run-recovery.md).
-
-## Web3 status
-
-- **TX1 — Run Manifest:** Current procedural puzzle progression rules use game version `0.6.7` and the canonical rules hash `keccak256(UTF-8("floor13-procedural-puzzles-floor-progression-v8-valid-floor4-combination-digits"))`. This version validates the three-digit Floor 4 combination generation, keeps the authored maintenance lockbox exclusive to Floor 4, resolves the Floor 13 exit through memory completion without a physical key, and retains the current deterministic encounter balance; older identities remain historical. In-progress older-rule checkpoints are not migrated or replayed under the new rules. The RunRegistry ABI, manifest layout, InputLogV2 encoding, FinalStateV1 layout, and seed derivation algorithm remain unchanged.
-- **Gameplay and replay:** Implemented locally in the game and covered by deterministic tests. InputLogV2 and FinalStateV1 are committed by TX2.
-- **TX2 — completion/result commitment:** The contract accepts canonical score, outcome, terminal tick, InputLogV2 hash, and FinalStateV1 hash after an explicit player action. This commitment is deterministic and auditable, but does not independently prove honest execution.
-- **Independent verifier/backend/signing:** Not implemented and not part of the current contest flow.
-
-No private keys or signing secrets belong in this repository. Wallet actions use the connected wallet. TX1 entropy currently includes public Hemi Testnet, Ethereum Mainnet, and Bitcoin sources; see [TX1_RUN_MANIFEST_SPEC.md](TX1_RUN_MANIFEST_SPEC.md) for the current selection and seed details.
-
-### Hemi network configuration
-
-- Select `VITE_HEMI_NETWORK=testnet` or `VITE_HEMI_NETWORK=mainnet`.
-- Testnet: chain `743111`, RPC `https://testnet.rpc.hemi.network/rpc`, explorer `https://testnet.explorer.hemi.xyz`.
-- Mainnet: chain `43111`, RPC `https://rpc.hemi.network/rpc`, explorer `https://explorer.hemi.xyz`.
-- Current RunRegistry deployments: testnet `0xfd12F980daa569f4d60736da4227d1BDC15AF662`; mainnet `0x88b7Ac78c7964a2CbcFC8EC8e7bc9F8d39A3B059`.
-- Use `VITE_HEMI_TESTNET_CONTRACT_ADDRESS` and `VITE_HEMI_MAINNET_CONTRACT_ADDRESS`; a mainnet build fails closed if its address is missing. See [MAINNET_DEPLOYMENT.md](MAINNET_DEPLOYMENT.md).
-
-Browser entropy transport is configured with `VITE_ETH_RPC_URL` (the safe
-example uses PublicNode). Ethereum tries that URL first, then the fixed
-PublicNode and dRPC public RPC fallbacks in order; each gets a 4-second
-timeout and one retry. Bitcoin keeps the Esplora one-confirmation reference
-(`tip - 1`), tries Blockstream then mempool.space in fixed order, and compares
-hashes for the selected height wherever providers respond. A disagreement
-fails closed. These are transport fallbacks: BTC remains WORLD entropy and the
-Ethereum block remains ECONOMY entropy.
-
-The deployed registry includes the current TX2 ABI. For future deployment
-preparation and chain-ID guarded commands, see [MAINNET_DEPLOYMENT.md](MAINNET_DEPLOYMENT.md).
-The contract remains commitment-only and does not independently verify honest
-gameplay.
-
-## Development status
-
-The deterministic simulation, InputLogV2, TX1 manifest integration, FinalStateV1 encoding, TX2 result commitment, and full-route replay tests are implemented. No independent Node verifier, verifier signing/service, or honest-execution proof exists. The current suite includes the full Floor 4 to Outside replay at multiple render schedules, after a long stall, and on repeated replay. Standard gameplay starts at 100 HP; the test suite also uses a separate high-HP traversal fixture to exercise the complete route.
-
-Current local validation commands:
+Requirements: Node.js `^20.19.0` or `>=22.12.0` and npm.
 
 ```bash
 npm ci
+copy .env.example .env.local   # PowerShell: Copy-Item .env.example .env.local
 npm test
 npm run build
 npm run dev
 ```
 
-Use Node.js `^20.19.0` or `>=22.12.0` (the Vite engine requirement), with a
-compatible npm release. Tests use Vitest. The production build runs TypeScript
-project checks and Vite. To smoke-test the built output locally, run
-`npm run preview -- --host 127.0.0.1` after `npm run build`.
+Local play does not require a wallet. Hemi runs require an injected wallet on the selected Hemi network and enough ETH for the player's explicit transactions. Never place private keys or seed phrases in `VITE_` variables.
 
-### Hosting
+To preview the production build:
 
-The built client expects to be served from the web origin root (`/`): runtime
-Asset manifests use a base-aware helper. Root hosting is the default; set
-`VITE_BASE_PATH=/contest/block13/` at build time to target a nested path. The
-configured prefix must match the path where the built files are served.
+```bash
+npm run preview -- --host 127.0.0.1
+```
 
-### Environment and wallet
+## Technical foundation
 
-Copy `.env.example` to `.env.local` for local configuration. Its `VITE_`
-values are public client configuration (selected Hemi network, Ethereum RPC,
-and public RunRegistry address), not secrets. Never put a wallet private key, seed
-phrase, or other credential in a `VITE_` variable or commit an environment
-file. Hemi runs require an injected wallet, the selected Hemi network, and
-gas funds for the user's explicit start and completion transactions. Local runs
-require no wallet and do not use Hemi.
+- Phaser 3 presentation with a React/Vite menu and wallet layer.
+- A Phaser-free TypeScript `AuthoritativeSimulation` running at a fixed 60 Hz.
+- Integer fixed-point positions and deterministic, domain-separated PCG32 streams.
+- Canonical `InputLogV2` recording, replay, and `FinalStateV1` result encoding.
+- Static collision geometry, deterministic procedural floor generation, and seeded puzzle clues.
+- Current rules identity: `floor13-procedural-puzzles-floor-progression-v9-global-horror-feedback-balance`.
 
-## Project structure
+The current balance uses a flashlight drain of 5 fixed subunits per simulation tick. Detailed balance values belong in technical documentation rather than the public game overview.
 
-- `src/core/authoritativeSimulation.ts` — Phaser-free authoritative gameplay
-- `src/core/inputRecorder.ts` — InputSource, InputLogV2 recording, replay, and input hash
-- `src/core/seedDerivation.ts`, `src/core/pcg32.ts`, `src/core/rng.ts` — manifest seeds and random streams
-- `src/core/finalStateV1.ts` — canonical FinalStateV1 projection, encoding, decoding, and hash
-- `src/game/` — Phaser presentation and keyboard adapter
-- `src/web3/` — wallet, selected Hemi network setup, TX1 manifest/entropy integration
-- `contracts/RunRegistry.sol` — TX1 RunRegistry contract and TX2 result commitment
-- `tests/` and `src/core/*.test.ts` — replay, determinism, and core tests
-- `docs/` — gameplay, art, audio, and design notes
+## Documentation
 
-The player-facing explanation of every floor puzzle is in
-[docs/puzzle-guide.md](docs/puzzle-guide.md).
+Start with the [documentation index](docs/README.md).
 
-Current protocol and architecture documentation is indexed in [ARCHITECTURE.md](ARCHITECTURE.md). Older audit and implementation reports are retained as historical records; their headings identify reports that describe superseded behavior.
+- [Gameplay and puzzle guide](docs/puzzle-guide.md)
+- [Architecture overview](ARCHITECTURE.md)
+- [Replay and wire-format specifications](docs/README.md#protocol-and-replay)
+- [Hemi integration and deployment](MAINNET_DEPLOYMENT.md)
+- [Run recovery](docs/run-recovery.md)
+- [Testing and release checklist](RELEASE_CHECKLIST.md)
+- [Audio, art, and asset provenance](ASSET_CREDITS.md)
 
-The current pre-release blockers and handoff checklist are in
-[RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md). The npm package is marked
-`private`; its `0.2.0` package metadata is internal project metadata and is
-intentionally independent from the onchain game version `0.6.7`.
-The current dependency advisory triage is in
-[docs/dependency-audit-2026-10.md](docs/dependency-audit-2026-10.md).
+Historical audits and implementation reports remain available where they preserve useful context. Their headers identify superseded behavior; current implementation documentation is linked from the index above.
 
-## License
+## Credits and licensing
 
-The software is MIT-licensed; see [LICENSE](LICENSE). Bundled art/audio have
-separate rights and are not automatically covered by MIT. See
-[ASSET_CREDITS.md](ASSET_CREDITS.md), [AUDIO_LICENSES.md](AUDIO_LICENSES.md),
-and [the third-party audio record](docs/audio/THIRD_PARTY_AUDIO.md).
+The software is MIT-licensed; see [LICENSE](LICENSE). Bundled pixel art, music, and sound effects have separate rights and attribution requirements. See [CREDITS.md](CREDITS.md), [ASSET_CREDITS.md](ASSET_CREDITS.md), [AUDIO_LICENSES.md](AUDIO_LICENSES.md), and the [third-party audio record](docs/audio/THIRD_PARTY_AUDIO.md).

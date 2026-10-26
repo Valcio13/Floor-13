@@ -23,7 +23,7 @@ export const PREVIOUS_CURRENT_RULES_IDENTIFIER = 'floor13-procedural-puzzles-flo
 export const PREVIOUS_CURRENT_RULES_HASH = keccak256(toBytes(PREVIOUS_CURRENT_RULES_IDENTIFIER));
 
 /** Balance changes affecting simulation state receive a distinct run identity. */
-export const RULES_IDENTIFIER = 'floor13-procedural-puzzles-floor-progression-v8-valid-floor4-combination-digits';
+export const RULES_IDENTIFIER = 'floor13-procedural-puzzles-floor-progression-v9-global-horror-feedback-balance';
 
 /** Canonical bytes32 rules identity: Keccak-256 of the identifier's UTF-8 bytes. */
 export const RULES_HASH = keccak256(toBytes(RULES_IDENTIFIER));

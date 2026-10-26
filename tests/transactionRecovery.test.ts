@@ -16,5 +16,7 @@ describe('onchain completion recovery guard', () => {
     expect(tx2SubmissionBlockReason(manifest, { connected: true, address: `0x${'88'.repeat(20)}`, chainId: 743111 }, false)).toMatch(/started this Hemi run/);
     expect(tx2SubmissionBlockReason(manifest, { connected: true, address: manifest.player, chainId: 1 }, false)).toMatch(/Hemi Testnet/);
     expect(tx2SubmissionBlockReason(manifest, { connected: true, address: manifest.player, chainId: 743111 }, true)).toMatch(/unresolved/);
+    expect(tx2SubmissionBlockReason(manifest, { connected: true, address: manifest.player, chainId: 43111 }, false, 'mainnet')).toBeNull();
+    expect(tx2SubmissionBlockReason(manifest, { connected: true, address: manifest.player, chainId: 743111 }, false, 'mainnet')).toMatch(/Hemi Mainnet/);
   });
 });

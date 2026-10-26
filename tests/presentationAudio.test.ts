@@ -41,6 +41,12 @@ describe('presentation audio mapping', () => {
     expect(audioCuesForEvents(events).every(event => event.cooldownMs >= 0)).toBe(true);
   });
 
+  it('gives evidence handling a clearer gain without adding a second sound', () => {
+    const clue = audioCuesForEvents([{ type: 'loot_searched', index: 0, result: { type: 'clue', id: 'floor4-calendar' } }]);
+    expect(clue).toHaveLength(1);
+    expect(clue[0]).toMatchObject({ key: 'sfx_interaction_search', volume: 0.56 });
+  });
+
   it('maps state edges for flashlight, battery, corruption, enemies, scare, and ending', () => {
     const sim = new AuthoritativeSimulation(123n);
     const base = sim.state;

@@ -22,7 +22,10 @@ export const BLOCK13_ENTRY_CURSE_CAP = 75 * FIXED_SCALE;
 export const AMBUSHER_WARNING_MIN_TICKS = 54;
 export const AMBUSHER_WARNING_MAX_TICKS = 72;
 export const WATCHER_PEAK_CURSE_SUBUNITS_PER_TICK = 384;
-export const FLASHLIGHT_DRAIN_SUBUNITS_PER_TICK = 4;
+/** 1.25% battery per second: meaningful pressure without removing recovery routes. */
+export const FLASHLIGHT_DRAIN_SUBUNITS_PER_TICK = 5;
+export const STALKER_MAX_HUNT_TICKS = 1080;
+export const CRAWLER_MAX_CHASE_TICKS = 216;
 export const STALKER_RECOVERY_COOLDOWN_TICKS = 900;
 export const MIMIC_REVEAL_TICKS = 36;
 export const MIMIC_CHASE_DURATION_TICKS = 120;
@@ -186,11 +189,11 @@ export function authoritativeLineOfSight(
   return walkable(x1, y1);
 }
 const STALKER_SPECS = {
-  4: { dormant: 10000, roam: 40, hunt: 120, detect: 120, investigate: 120 },
-  3: { dormant: 9900, roam: 50, hunt: 140, detect: 150, investigate: 180 },
-  2: { dormant: 9700, roam: 70, hunt: 160, detect: 200, investigate: 240 },
-  1: { dormant: 9400, roam: 90, hunt: 180, detect: 250, investigate: 300 },
-  0: { dormant: 9000, roam: 100, hunt: 200, detect: 300, investigate: 360 },
+  4: { dormant: 10000, roam: 40, hunt: 120, detect: 120, investigate: 108 },
+  3: { dormant: 9900, roam: 50, hunt: 140, detect: 150, investigate: 162 },
+  2: { dormant: 9700, roam: 70, hunt: 160, detect: 200, investigate: 216 },
+  1: { dormant: 9400, roam: 90, hunt: 180, detect: 250, investigate: 270 },
+  0: { dormant: 9000, roam: 100, hunt: 200, detect: 300, investigate: 324 },
 } as const;
 
 /** Enemy rosters are deliberately sparse under Floor 13 rules v1. */
@@ -587,7 +590,7 @@ export class AuthoritativeSimulation {
         if (d2 < square(30 * FIXED_SCALE)) {
           if (this.applyDamage(STALKER_CONTACT_DAMAGE_HP, tick, STALKER_CONTACT_CURSE)) this.stateValue.scareLockoutUntilTick = Math.max(s.scareLockoutUntilTick, tick + 120);
           this.beginStalkerRetreat(tick);
-        } else if (s.flashlightOn || tick - e.chaseStartTick > 900) this.beginStalkerRetreat(tick);
+        } else if (s.flashlightOn || tick - e.chaseStartTick > STALKER_MAX_HUNT_TICKS) this.beginStalkerRetreat(tick);
         break;
       case 'retreating':
         this.moveActor(e, Math.trunc(spec.hunt * 4 / 5));
@@ -626,7 +629,7 @@ export class AuthoritativeSimulation {
             const cell = this.spawnCellFar(250, this.crawlerRng);
             [e.x, e.y] = this.cellCenter(cell); e.chasing = false;
           }
-        } else if (tick - e.chaseStartTick > 180 || d2 > square(300 * FIXED_SCALE)) {
+        } else if (tick - e.chaseStartTick > CRAWLER_MAX_CHASE_TICKS || d2 > square(300 * FIXED_SCALE)) {
           e.chasing = false;
           [e.targetX, e.targetY] = this.cellCenter(this.randomWalkableCell(this.crawlerRng));
         }

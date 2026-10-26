@@ -37,7 +37,9 @@ export function audioCuesForEvents(events: readonly SimulationEvent[], state?: P
         cues.push(cue('sfx_player_hurt', 180));
         break;
       case 'loot_searched':
-        cues.push(cue('sfx_interaction_search', 150));
+        // Evidence uses the same restrained handling recording at a slightly
+        // clearer gain; no new asset or overlapping cue is needed.
+        cues.push(cue('sfx_interaction_search', 150, undefined, event.result.type === 'clue' ? 0.56 : 0.46));
         if (event.result.type === 'health') cues.push(cue('sfx_item_heal', 250));
         else if (event.result.type !== 'nothing' && event.result.type !== 'clue') cues.push(cue('sfx_item_pickup', 150));
         break;

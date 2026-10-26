@@ -27,6 +27,10 @@ export type HemiNetworkConfig = {
   contractAddress: `0x${string}`;
 };
 
+export function networkDisplayName(network: HemiNetworkName): string {
+  return network === 'mainnet' ? 'MAINNET' : 'TESTNET';
+}
+
 const ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
 const ZERO_ADDRESS = `0x${'00'.repeat(20)}`;
 
@@ -64,6 +68,11 @@ export function resolveHemiNetworkConfig(env: Record<string, unknown>): HemiNetw
     explorerUrl: name === 'mainnet' ? 'https://explorer.hemi.xyz' : 'https://testnet.explorer.hemi.xyz',
     contractAddress: configuredAddress(name, env),
   };
+}
+
+/** Resolve either supported network without changing the build default. */
+export function getHemiNetworkConfig(network: HemiNetworkName): HemiNetworkConfig {
+  return resolveHemiNetworkConfig({ ...(import.meta.env as unknown as Record<string, unknown>), VITE_HEMI_NETWORK: network });
 }
 
 const selectedConfig = resolveHemiNetworkConfig(import.meta.env as unknown as Record<string, unknown>);

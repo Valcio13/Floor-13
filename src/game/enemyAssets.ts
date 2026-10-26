@@ -81,6 +81,8 @@ export function lampJumpscareAssetForEvent(eventId: number) {
 export const CRAWLER_WALK_FRAME_RATE = 8;
 export const CRAWLER_FRAME_STEP_MS = 1000 / CRAWLER_WALK_FRAME_RATE;
 export const CRAWLER_WALK_CYCLE_DURATION_MS = CRAWLER_FRAME_STEP_MS * 4;
+/** Nearby scrape cues stay occasional and use authoritative ticks for stable presentation timing. */
+export const CRAWLER_NEARBY_CUE_COOLDOWN_TICKS = 108;
 
 /** Stable per-creature cycle offset breaks synchronized group movement without RNG. */
 export function crawlerPresentationPhaseOffsetMs(entityId: number): number {
@@ -135,7 +137,14 @@ export function mimicTextureKey(
 
 /** Brief purely visual recoil on an already-authoritative Mimic reveal edge. */
 export const MIMIC_REVEAL_PULSE_DURATION_MS = 300;
-export function mimicRevealPulseScale(elapsedMs: number, settledScale = 1.2): number {
+/**
+ * The revealed Mimic is intentionally larger than its disguise so the player
+ * can immediately read the reveal. This only changes the sprite presentation;
+ * the authoritative contact footprint remains unchanged.
+ */
+export const MIMIC_REVEALED_DISPLAY_SCALE = 1.45;
+
+export function mimicRevealPulseScale(elapsedMs: number, settledScale = MIMIC_REVEALED_DISPLAY_SCALE): number {
   if (!Number.isFinite(elapsedMs) || elapsedMs < 0 || elapsedMs >= MIMIC_REVEAL_PULSE_DURATION_MS) return settledScale;
   const fade = 1 - elapsedMs / MIMIC_REVEAL_PULSE_DURATION_MS;
   return settledScale + Math.sin((elapsedMs / 100) * Math.PI) * 0.12 * fade;
@@ -146,6 +155,14 @@ export function watcherGazeEyeAlpha(active: boolean, gazeIsCausingCurse: boolean
   if (!active || !gazeIsCausingCurse) return 0;
   const readableExposure = Number.isFinite(exposure) ? Math.max(0, Math.min(1, exposure)) : 0;
   return Math.max(0.34, readableExposure * 0.78);
+}
+
+/** Restrained enemy eye visibility for authored sprites; presentation only. */
+export function enemyEyeGlowAlpha(active: boolean, exposure: number, intensity = 1): number {
+  if (!active) return 0;
+  const readableExposure = Number.isFinite(exposure) ? Math.max(0, Math.min(1, exposure)) : 0;
+  const readableIntensity = Number.isFinite(intensity) ? Math.max(0, Math.min(1, intensity)) : 0;
+  return Math.max(0, Math.min(0.86, (0.2 + readableExposure * 0.66) * readableIntensity));
 }
 
 /** Return one positional audio target when gaze begins after an already-present Watcher. */

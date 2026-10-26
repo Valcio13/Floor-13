@@ -782,10 +782,10 @@ describe('authoritative deterministic simulation', () => {
     expect(repeat.snapshot()).toEqual(sim.snapshot());
   });
 
-  it('uses 4 fixed battery subunits per lit simulation tick', () => {
+  it('uses 5 fixed battery subunits per lit simulation tick', () => {
     const sim = new AuthoritativeSimulation(0x812n, { crawlers: [], watchers: [], ambushers: [], mimics: [] });
     sim.step({ ...emptyInput, flashlight: true });
-    expect(sim.state.battery).toBe(100 * FIXED_SCALE - 4);
+    expect(sim.state.battery).toBe(100 * FIXED_SCALE - 5);
   });
 
   it('allows curse above 85 inside Block 13 and still loses at 100', () => {

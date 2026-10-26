@@ -1,5 +1,5 @@
 import { useAccount, useConnect, useDisconnect, useWriteContract, useWaitForTransactionReceipt, useSwitchChain, usePublicClient } from 'wagmi';
-import { hemiNetwork, CONTRACT_ADDRESS, RUN_REGISTRY_ABI, assertConfiguredContractAddress } from './config';
+import { getHemiNetworkConfig, hemiNetwork, RUN_REGISTRY_ABI, type HemiNetworkName } from './config';
 import { parseRunStartedRunId } from './eventParsing';
 import { useState, useCallback } from 'react';
 import { type Hash } from 'viem';
@@ -8,13 +8,14 @@ import { fetchEntropyBundle, validateEntropyBundle, type EntropyBundle, type Ent
 import type { RunManifest } from '../core/seedDerivation';
 import type { CompleteRunArgs } from './tx2Completion';
 
-export function useWallet() {
+export function useWallet(networkName: HemiNetworkName = hemiNetwork.name) {
   const { address, isConnected, chain } = useAccount();
   const { connect, connectors, isPending: isConnecting, error: connectError } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchChain, isPending: isSwitching, error: switchError } = useSwitchChain();
 
-  const isCorrectNetwork = chain?.id === hemiNetwork.chain.id;
+  const targetNetwork = getHemiNetworkConfig(networkName);
+  const isCorrectNetwork = chain?.id === targetNetwork.chain.id;
 
   const connectWallet = useCallback(() => {
     const injected = connectors.find((c) => c.type === 'injected');
@@ -25,9 +26,9 @@ export function useWallet() {
 
   const switchToHemi = useCallback(() => {
     if (switchChain) {
-      switchChain({ chainId: hemiNetwork.chain.id });
+      switchChain({ chainId: targetNetwork.chain.id });
     }
-  }, [switchChain]);
+  }, [switchChain, targetNetwork.chain.id]);
 
   return {
     address,
@@ -61,9 +62,10 @@ function encodeShortTextBytes32(str: string): `0x${string}` {
 export type StartRunPhase = 'entropy' | 'wallet' | 'submitted' | 'confirmed';
 export type StartRunProgress = (stage: EntropyFetchStage, status: EntropyFetchStageStatus) => void;
 
-export function useStartRun() {
+export function useStartRun(networkName: HemiNetworkName = hemiNetwork.name) {
+  const targetNetwork = getHemiNetworkConfig(networkName);
   const { writeContractAsync } = useWriteContract();
-  const publicClient = usePublicClient();
+  const publicClient = usePublicClient({ chainId: targetNetwork.chain.id });
   const { address } = useAccount();
   const [txHash, setTxHash] = useState<Hash | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -82,8 +84,6 @@ export function useStartRun() {
     if (!publicClient || !address) {
       throw new Error('Wallet not connected');
     }
-    assertConfiguredContractAddress();
-
     setIsLoading(true);
     setError(null);
     setTxHash(null);
@@ -111,7 +111,8 @@ export function useStartRun() {
       if (signal?.aborted) throw new Error('Hemi run setup cancelled.');
       onPhase?.('wallet');
       const hash = await writeContractAsync({
-        address: CONTRACT_ADDRESS,
+        address: targetNetwork.contractAddress,
+        chainId: targetNetwork.chain.id,
         abi: RUN_REGISTRY_ABI,
         functionName: 'startRun',
         args: [
@@ -137,7 +138,7 @@ export function useStartRun() {
       console.log('[useStartRun] Transaction confirmed');
 
       // Parse RunStarted event to get runId
-      const runId = parseRunStartedRunId(receipt.logs, CONTRACT_ADDRESS, address);
+      const runId = parseRunStartedRunId(receipt.logs, targetNetwork.contractAddress, address);
       console.log('[useStartRun] Run started with ID:', runId);
 
       // Create manifest for local use
@@ -162,7 +163,7 @@ export function useStartRun() {
       setIsLoading(false);
       throw err;
     }
-  }, [writeContractAsync, publicClient, address]);
+  }, [writeContractAsync, publicClient, address, targetNetwork]);
 
   return {
     startRun,
@@ -174,9 +175,10 @@ export function useStartRun() {
 }
 
 /** Submit and confirm a deterministic result commitment on Hemi Testnet. */
-export function useCompleteRun() {
+export function useCompleteRun(networkName: HemiNetworkName = hemiNetwork.name) {
+  const targetNetwork = getHemiNetworkConfig(networkName);
   const { writeContractAsync } = useWriteContract();
-  const publicClient = usePublicClient();
+  const publicClient = usePublicClient({ chainId: targetNetwork.chain.id });
   const [txHash, setTxHash] = useState<Hash | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -184,8 +186,7 @@ export function useCompleteRun() {
 
   const completeRun = useCallback(
     async (args: CompleteRunArgs, onSubmitted?: (hash: Hash) => void) => {
-      assertConfiguredContractAddress();
-      if (!publicClient) throw new Error(`Hemi ${hemiNetwork.name} client is unavailable`);
+      if (!publicClient) throw new Error(`Hemi ${targetNetwork.name} client is unavailable`);
       setIsLoading(true);
       setError(null);
       setTxHash(null);
@@ -193,7 +194,8 @@ export function useCompleteRun() {
 
       try {
         const hash = await writeContractAsync({
-          address: CONTRACT_ADDRESS,
+          address: targetNetwork.contractAddress,
+          chainId: targetNetwork.chain.id,
           abi: RUN_REGISTRY_ABI,
           functionName: 'completeRun',
           args: [args.runId, args.score, args.outcome, args.terminalTick, args.inputHash, args.finalStateHash],
@@ -212,7 +214,7 @@ export function useCompleteRun() {
         throw err;
       }
     },
-    [writeContractAsync, publicClient]
+    [writeContractAsync, publicClient, targetNetwork]
   );
 
   return {

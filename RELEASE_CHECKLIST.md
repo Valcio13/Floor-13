@@ -43,7 +43,7 @@ but release blockers and manual verification remain.
   without risky refactoring.
 - [ ] Review the final tracked and untracked file list before release.
 - [x] Version distinction documented: private package metadata stays `0.2.0`;
-  protocol game version is `0.6.0` for deterministic procedural puzzle rules.
+  protocol game version is `0.6.7` for deterministic procedural puzzle rules.
 - [ ] Create and review a release commit, then tag only after all blockers
   clear.
 
@@ -60,13 +60,13 @@ but release blockers and manual verification remain.
 - [x] Active run recovery replays canonical inputs and validates the recovered
   authoritative state, including checkpoint/continuation equivalence at the
   transition into Block 13; see `docs/run-recovery.md` and replay tests.
-- [x] New runs bind Floor 13 procedural puzzle progression to game version `0.6.0` and
+- [x] New runs bind Floor 13 procedural puzzle progression to game version `0.6.7` and
   its new rules identity; old manifests are retained but unfinished old-rule checkpoints are
   rejected.
 - [x] Recovery regressions reject unfinished `0.5.0` and `0.4.2` checkpoints
   under the new puzzle rules; InputLogV2 and FinalStateV1 remain unchanged.
 - [x] Latest full automated validation after the procedural puzzle progression:
-  `npm test` passed (46 files, 271 tests); `npm run build` passed; `git diff --check`
+  `npm test` passed (56 files, 318 tests); `npm run build` passed; `git diff --check`
   passed. The production build reports a 2.014 MB minified main chunk (576.67
   kB gzip), plus third-party annotation and chunk-size warnings.
 - [ ] Manual all-floor puzzle playthrough remains outstanding because browser
