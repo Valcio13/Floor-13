@@ -1,93 +1,114 @@
 # Floor 13: The Building That Never Existed
 
-**A pixel-art psychological survival horror game about an abandoned apartment building, forgotten records, and a floor that should not exist.**
+A pixel-art survival horror mystery set inside an abandoned apartment building. Explore dark corridors, uncover evidence, solve puzzles, and survive hostile creatures as you descend through four floors toward an impossible Floor 13. Discover the truth behind an incident erased from official records.
 
-An unknown message sends the player to the fourth floor. Explore the building's four real floors, recover evidence, solve procedural investigations, manage a failing flashlight, and survive the descent to the impossible Floor 13.
+## Overview
 
-## What you do
+An unknown number sends a single message: “Go to the fourth floor.” Investigate the building by searching rooms and corridors, collecting records, and solving a seed-generated puzzle on each stage. Manage health, curse, and flashlight battery while avoiding hostile creatures. The route descends through Floors 4, 3, 2, and 1 before reaching the impossible Floor 13.
 
-- Explore connected, procedurally generated apartment floors.
-- Search containers for evidence, supplies, and clues.
-- Solve a distinct deterministic puzzle on each floor.
-- Read recovered records in the field-notes notebook.
-- Manage health, curse, flashlight battery, and enemy encounters.
-- Face the Stalker, Crawler, Watcher, Ambusher, and Mimic.
-- Finish local runs offline or create an on-chain Hemi run record with explicit wallet transactions.
+## Features
 
-The normal route is **Floor 4 → Floor 3 → Floor 2 → Floor 1 → Floor 13 → Outside**. The story's major revelations and ending are intentionally kept out of this README.
+- Seeded procedural exploration across five playable stages: Floors 4, 3, 2, 1, and Floor 13.
+- Investigation built around searchable evidence, recovered documents, and a field-notes notebook.
+- A distinct, deterministic puzzle on each floor, with fallback routes after repeated failures.
+- Survival-horror systems including health, curse, flashlight battery, hostile creatures, and environmental scares.
+- Five enemy types: Stalker, Crawler, Watcher, Ambusher, and Mimic.
+- Optional Hemi-connected runs that record start and completion commitments on-chain.
+- Local play that does not require a wallet or blockchain transaction.
 
-## Controls
+## How to Play
 
-| Input | Action |
+Explore the floor, search marked evidence and containers, read recovered clues in the notebook, and solve the floor objective to unlock the route onward. Avoid enemies, watch your resources, and use the flashlight to navigate dark areas.
+
+| Keyboard | Action |
 | --- | --- |
-| `WASD` / arrow keys | Move |
-| `F` | Toggle flashlight |
-| `E` | Interact with containers, evidence, keys, stairs, and puzzle devices |
-| `Tab` | Open the field-notes notebook while playing |
+| `W` `A` `S` `D` or arrow keys | Move |
+| `E` | Interact, search, confirm, or submit |
+| `F` | Toggle flashlight; close a puzzle panel |
+| `Tab` | Open the field-notes notebook |
 | `Escape` | Pause or close the current panel |
+| `Space` | Close an evidence/story panel where shown |
 
-Audio settings and Reduced Jumpscare Intensity are available from the menu and pause screen. Reduced intensity changes presentation only; it does not change simulation timing, damage, or outcomes.
+The available controls are also listed in the in-game **How to Play** panel. Reduced Jumpscare Intensity changes presentation only; it does not change game rules or outcomes.
 
-## Hemi integration
+## Play Online
 
-Hemi runs bind a player's run to a TX1 manifest containing the game identity and public entropy references. After completion, TX2 records the submitted score, outcome, terminal tick, and hashes of the canonical `InputLogV2` and `FinalStateV1` payloads.
+**Public URL:** Not configured. Add the production URL here after hosting is published and verified.
 
-The current contract stores player-submitted commitments. It does **not** independently verify that gameplay was honestly executed, validate the score, or provide an off-chain verifier.
+## Local Development
 
-Both networks are supported through the same wallet flow:
-
-| Network | Chain ID | RPC | Explorer |
-| --- | ---: | --- | --- |
-| Hemi Testnet | `743111` | `https://testnet.rpc.hemi.network/rpc` | [Explorer](https://testnet.explorer.hemi.xyz) |
-| Hemi Mainnet | `43111` | `https://rpc.hemi.network/rpc` | [Explorer](https://explorer.hemi.xyz) |
-
-The selected network and matching public RunRegistry address are configured with `VITE_HEMI_NETWORK`, `VITE_HEMI_TESTNET_CONTRACT_ADDRESS`, and `VITE_HEMI_MAINNET_CONTRACT_ADDRESS`. The repository contains configured addresses, but explorer verification and release deployment status must be confirmed separately before claiming a production deployment.
-
-## Run locally
-
-Requirements: Node.js `^20.19.0` or `>=22.12.0` and npm.
+Requirements: Node.js `^20.19.0` or `>=22.12.0`, and npm.
 
 ```bash
 npm ci
-copy .env.example .env.local   # PowerShell: Copy-Item .env.example .env.local
-npm test
-npm run build
-npm run dev
 ```
 
-Local play does not require a wallet. Hemi runs require an injected wallet on the selected Hemi network and enough ETH for the player's explicit transactions. Never place private keys or seed phrases in `VITE_` variables.
-
-To preview the production build:
+Create a local environment file from the example and choose the appropriate Hemi network settings described below. For local play, a wallet address is not required.
 
 ```bash
-npm run preview -- --host 127.0.0.1
+# PowerShell
+Copy-Item .env.example .env.local
+
+npm run dev
+npm test
+npm run build
+npm run preview
 ```
 
-## Technical foundation
+The package scripts are defined in [`package.json`](package.json). `npm run build` runs TypeScript project checks and creates the production build in `dist/`.
 
-- Phaser 3 presentation with a React/Vite menu and wallet layer.
-- A Phaser-free TypeScript `AuthoritativeSimulation` running at a fixed 60 Hz.
-- Integer fixed-point positions and deterministic, domain-separated PCG32 streams.
-- Canonical `InputLogV2` recording, replay, and `FinalStateV1` result encoding.
-- Static collision geometry, deterministic procedural floor generation, and seeded puzzle clues.
-- Current rules identity: `floor13-procedural-puzzles-floor-progression-v9-global-horror-feedback-balance`.
+## Hemi Integration
 
-The current balance uses a flashlight drain of 5 fixed subunits per simulation tick. Detailed balance values belong in technical documentation rather than the public game overview.
+Hemi-connected runs use two explicit wallet transactions:
+
+1. **TX1** creates a run manifest containing the game identity and public entropy references. The confirmed `RunStarted` event provides the run ID.
+2. **TX2**, requested by the player after the run, records the score, outcome, terminal tick, and hashes of the canonical `InputLogV2` and `FinalStateV1` data.
+
+The contract stores player-submitted commitments. It does **not** execute or replay the game, independently validate the score, or prove that a run was played honestly. Local play uses the same game without wallet transactions.
+
+The configured networks are:
+
+| Network | Chain ID | Contract address | Explorer |
+| --- | ---: | --- | --- |
+| Hemi Testnet | `743111` | `0xfd12F980daa569f4d60736da4227d1BDC15AF662` | [Testnet Explorer](https://testnet.explorer.hemi.xyz) |
+| Hemi Mainnet | `43111` | `0x88b7Ac78c7964a2CbcFC8EC8e7bc9F8d39A3B059` | [RunRegistry on Hemi Explorer](https://explorer.hemi.xyz/address/0x88b7Ac78c7964a2CbcFC8EC8e7bc9F8d39A3B059) |
+
+The frontend configuration maps Mainnet to the address supplied by `VITE_HEMI_MAINNET_CONTRACT_ADDRESS` in [`src/web3/config.ts`](src/web3/config.ts). The address is configured in `.env.example`; a read-only Mainnet RPC query returned deployed bytecode on 2026-10-27. Explorer source verification and a live wallet flow have **not** been confirmed here. Bytecode at an address alone does not prove that it matches this repository's source.
+
+## Environment Variables
+
+| Variable | Purpose |
+| --- | --- |
+| `VITE_HEMI_NETWORK` | Selects `testnet` or `mainnet`. The application defaults to Testnet if omitted; production must explicitly set `VITE_HEMI_NETWORK=mainnet`. |
+| `VITE_HEMI_TESTNET_CONTRACT_ADDRESS` | RunRegistry address for Hemi Testnet. |
+| `VITE_HEMI_MAINNET_CONTRACT_ADDRESS` | RunRegistry address for Hemi Mainnet. Required for a Mainnet build. |
+| `VITE_ETH_RPC_URL` | Optional Ethereum Mainnet RPC override for entropy retrieval. Public fallback endpoints are configured in the application. |
+
+For a production Mainnet build, configure both values before building:
+
+```env
+VITE_HEMI_NETWORK=mainnet
+VITE_HEMI_MAINNET_CONTRACT_ADDRESS=0x88b7Ac78c7964a2CbcFC8EC8e7bc9F8d39A3B059
+```
+
+Use the matching network and contract address. Do not put private keys, seed phrases, wallet credentials, or other secrets in `VITE_` variables; Vite exposes these values to the browser.
+
+## Technology Stack
+
+- TypeScript, React, and Vite for the menu, wallet layer, and build.
+- Phaser 3 for the game presentation.
+- Wagmi and viem for EVM wallet connection and Hemi contract calls.
+- Solidity and Foundry for the `RunRegistry` contract and its tests.
+- Vitest for the application test suite.
+
+## Credits and Third-Party Assets
+
+Project-owned ChatGPT-generated artwork and locally created pixel art are licensed under MIT as described in the [asset credits](docs/credits/ASSET_CREDITS.md) and [visual asset provenance](docs/visual-asset-provenance.md), subject to any applicable third-party input rights. Third-party audio and other external media are not covered by that grant; their sources, modifications, licenses, and attribution are listed in the [audio license records](docs/credits/AUDIO_LICENSES.md) and [third-party audio record](docs/audio/THIRD_PARTY_AUDIO.md). Application dependencies remain under their respective licenses.
+
+## License
+
+The repository's software and project-owned visual artwork are licensed under the MIT License; see [`LICENSE`](LICENSE) and the visual provenance record. This does not grant rights in third-party music, sound effects, or other bundled media, which remain subject to their separately documented terms.
 
 ## Documentation
 
-Start with the [documentation index](docs/README.md).
-
-- [Gameplay and puzzle guide](docs/puzzle-guide.md)
-- [Architecture overview](docs/architecture/ARCHITECTURE.md)
-- [Replay and wire-format specifications](docs/README.md#protocol-and-replay)
-- [Hemi integration and deployment](docs/hemi/MAINNET_DEPLOYMENT.md)
-- [Run recovery](docs/run-recovery.md)
-- [Testing and release checklist](docs/release/RELEASE_CHECKLIST.md)
-- [Audio, art, and asset provenance](docs/credits/ASSET_CREDITS.md)
-
-Historical audits and implementation reports remain available where they preserve useful context. Their headers identify superseded behavior; current implementation documentation is linked from the index above.
-
-## Credits and licensing
-
-The software is MIT-licensed; see [LICENSE](LICENSE). Bundled pixel art, music, and sound effects have separate rights and attribution requirements. See [CREDITS.md](docs/credits/CREDITS.md), [ASSET_CREDITS.md](docs/credits/ASSET_CREDITS.md), [AUDIO_LICENSES.md](docs/credits/AUDIO_LICENSES.md), and the [third-party audio record](docs/audio/THIRD_PARTY_AUDIO.md).
+Start at the [documentation index](docs/README.md). Key guides include the [puzzle guide](docs/puzzle-guide.md), [architecture overview](docs/architecture/ARCHITECTURE.md), [Hemi deployment configuration](docs/hemi/MAINNET_DEPLOYMENT.md), [run recovery](docs/run-recovery.md), and [release checklist](docs/release/RELEASE_CHECKLIST.md).

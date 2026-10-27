@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CONTAINER_SCARE_ASSET, CONTAINER_SCARE_VARIANT_ASSETS, ENEMY_ASSET_MANIFEST, CRAWLER_NEARBY_CUE_COOLDOWN_TICKS, CRAWLER_WALK_CYCLE_DURATION_MS, CRAWLER_WALK_FRAME_RATE, LAMP_JUMPSCARE_ASSET, LAMP_JUMPSCARE_VARIANT_ASSETS, MIMIC_REVEAL_PULSE_DURATION_MS, MIMIC_REVEALED_DISPLAY_SCALE, ambusherWarningAlpha, containerScareAssetForSearchIndex, crawlerMovedBetween, crawlerPresentationPhaseOffsetMs, crawlerTextureKeyForPresentation, enemyEyeGlowAlpha, lampJumpscareAssetForEvent, mimicRevealPulseScale, watcherGazeAudioPosition, watcherGazeEyeAlpha, watcherTextureKey, ambusherTextureKey, mimicTextureKey } from '../src/game/enemyAssets';
+import { CONTAINER_SCARE_ASSET, CONTAINER_SCARE_VARIANT_ASSETS, ENEMY_ASSET_MANIFEST, CRAWLER_NEARBY_CUE_COOLDOWN_TICKS, CRAWLER_WALK_CYCLE_DURATION_MS, CRAWLER_WALK_FRAME_RATE, LAMP_JUMPSCARE_ASSET, LAMP_JUMPSCARE_VARIANT_ASSETS, LAMP_JUMPSCARE_COOLDOWN_TICKS, LAMP_JUMPSCARE_DURATION_MS, LAMP_JUMPSCARE_ROLL_MODULUS, MIMIC_REVEAL_PULSE_DURATION_MS, MIMIC_REVEALED_DISPLAY_SCALE, ambusherWarningAlpha, containerScareAssetForSearchIndex, crawlerMovedBetween, crawlerPresentationPhaseOffsetMs, crawlerTextureKeyForPresentation, enemyEyeGlowAlpha, lampJumpscareAssetForEvent, lampJumpscareRoll, mimicRevealPulseScale, watcherGazeAudioPosition, watcherGazeEyeAlpha, watcherTextureKey, ambusherTextureKey, mimicTextureKey } from '../src/game/enemyAssets';
 import { AuthoritativeSimulation, FIXED_SCALE } from '../src/core/authoritativeSimulation';
 import { NARRATIVE_ASSET_MANIFEST, victoryExteriorScale } from '../src/game/narrativeAssets';
 import { resultHandoffReady, shouldBeginVictoryEpilogue, VICTORY_EPILOGUE } from '../src/game/contestUx';
@@ -32,6 +32,12 @@ describe('remaining authored Block 13 visual assets', () => {
     expectPng(LAMP_JUMPSCARE_VARIANT_ASSETS[1], 2);
     expect(lampJumpscareAssetForEvent(0).key).toBe('lamp_jumpscare_crawling_shadow');
     expect(lampJumpscareAssetForEvent(1).key).toBe('lamp_jumpscare_ghostly_figure');
+    expect(LAMP_JUMPSCARE_DURATION_MS).toBe(720);
+    expect(LAMP_JUMPSCARE_COOLDOWN_TICKS).toBe(900);
+    expect(lampJumpscareRoll(123, 456)).toBe(lampJumpscareRoll(123, 456));
+    expect(lampJumpscareRoll(123, 456)).toBeGreaterThanOrEqual(0);
+    expect(LAMP_JUMPSCARE_ROLL_MODULUS).toBe(110);
+    expect(lampJumpscareRoll(123, 456)).toBeLessThan(LAMP_JUMPSCARE_ROLL_MODULUS);
   });
 
   it('runs the Crawler four-step 8 FPS cycle and returns immediately to idle on stop', () => {

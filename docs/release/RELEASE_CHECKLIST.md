@@ -1,77 +1,82 @@
-# Floor 13 release candidate checklist
+# Floor 13 release checklist
 
-Status: **not ready for public release**. The Hemi Mainnet address is recorded,
-but release blockers and manual verification remain.
+Updated 2026-10-27. **Public release is blocked** until the asset rights and
+release-verification items below are resolved. Do not remove credits or
+publish media with unknown redistribution permission to make this checklist
+pass.
 
-## Blockers
+## Blocking items
 
-- [ ] **BLOCKER — artwork rights:** resolve every `UNRESOLVED` entry in
-  `docs/visual-asset-provenance.md`; record creator, source/generation process,
-  license, attribution, and explicit public redistribution permission. If
-  rights cannot be obtained, commission/create and document replacements.
-- [ ] **MAJOR — dependencies:** review current `npm audit` output and resolve
-  or formally accept the production high/moderate advisories and test-runner
-  critical advisories. The previous non-forced lock update did not clear all
-  findings; no major wagmi/Vitest upgrade was made without a compatibility
-  plan.
-- [ ] **MAJOR — pending-chain status:** manual QA must test wallet rejection,
-  pending, mined, and reverted TX1/TX2, and verify the user-facing “inspect
-  explorer” recovery choice never triggers an automatic resend.
-- [ ] **MINOR — bundle warning:** the build warns about a large main chunk.
-  Measure load performance at the contest host; defer code splitting unless
-  the measured startup cost warrants it.
-- [x] Removed tracked legacy `src.zip` and `src.rar`; no source reference to
-  either archive was found and neither was copied to the production build.
+- [ ] **Visual asset rights:** `docs/visual-asset-provenance.md` records
+  supplied visual assets with unknown creators, licenses, and public
+  redistribution permission. Obtain and document rights for the intended
+  contest, repository, and game distribution, or replace affected media with
+  cleared art. The software MIT license does not cover these files.
+- [ ] **Dependency review:** the last recorded `npm audit` is dated 2026-10-09
+  (`docs/dependency-audit-2026-10.md`). Re-run against the exact release
+  lockfile and resolve or explicitly accept the applicable advisories before
+  public release.
+- [ ] **Hemi deployment record:** the configured Mainnet address has
+  non-empty bytecode, but its verified source, deployment transaction,
+  compiler/optimizer settings, and deployer record are not confirmed. The
+  chain bytecode metadata indicates Solidity 0.8.34 while local
+  `foundry.toml` pins 0.8.24; resolve this before claiming source verification.
+- [ ] **Wallet lifecycle QA:** manually test rejected, pending, mined, and
+  reverted TX1/TX2 states, including refresh/recovery and the explicit
+  “inspect explorer” path. Do not submit a transaction without the player's
+  approval.
+- [ ] **Production browser QA:** a local production preview could not be
+  opened from the available in-app browser on 2026-10-27. Verify the hosted
+  page, console/network requests, responsive UI, floor transitions, and
+  ending in a normal browser.
+- [ ] **Play Online URL:** add a public URL only after the host is published
+  and verified; until then the README marks it as unconfigured.
 
-## Before release
+## Mainnet release configuration
 
-- [ ] Confirm the visual asset rights entry is complete and publish required
-  notices with the game.
-- [ ] Run `npm ci`, `npm test`, `npm run build`, and `git diff --check` on the
-  exact release commit.
-- [ ] Serve the production build from the contest host and exercise the Local
-  menu path at desktop viewport sizes; check browser console and network
-  requests for missing assets.
-- [ ] Manually test the injected-wallet Hemi Testnet flow using a funded test
-  wallet: network switching, TX1 start, run entry, TX2 completion, failure and
-  retry. Do not use a production wallet or submit anything without explicit
-  user action.
-- [ ] Test refresh/recovery behavior, audio settings and preview cleanup,
-  pause/resume, reduced scare intensity, progression, death, and victory.
-- [ ] Review the large Vite main-chunk warning. It is not currently a build
-  failure; only pursue code splitting if it can be done and revalidated
-  without risky refactoring.
-- [ ] Review the final tracked and untracked file list before release.
-- [x] Version distinction documented: private package metadata stays `0.2.0`;
-  protocol game version is `0.6.7` for deterministic procedural puzzle rules.
-- [ ] Create and review a release commit, then tag only after all blockers
-  clear.
+The release build must explicitly set:
 
-## Verified in this audit
+```env
+VITE_HEMI_NETWORK=mainnet
+VITE_HEMI_MAINNET_CONTRACT_ADDRESS=0x88b7Ac78c7964a2CbcFC8EC8e7bc9F8d39A3B059
+```
 
-- [x] Root MIT `LICENSE` is present for the software. Bundled media rights are
-  separate and are tracked in `docs/credits/ASSET_CREDITS.md` and audio license records.
-- [x] Production manifests and asset tests cover loaded image/audio paths and
-  native PNG dimensions/modes.
-- [x] Main menu and audio settings loaded from a local Vite production preview;
-  Escape closed settings and the Local path reached the opening narrative.
-- [x] Base-aware runtime asset URL strategy supports root and configured
-  nested prefixes; URL tests and a nested-prefix production build pass.
-- [x] Active run recovery replays canonical inputs and validates the recovered
-  authoritative state, including checkpoint/continuation equivalence at the
-  transition into Block 13; see `docs/run-recovery.md` and replay tests.
-- [x] New runs bind Floor 13 procedural puzzle progression to game version `0.6.7` and
-  its new rules identity; old manifests are retained but unfinished old-rule checkpoints are
-  rejected.
-- [x] Recovery regressions reject unfinished `0.5.0` and `0.4.2` checkpoints
-  under the new puzzle rules; InputLogV2 and FinalStateV1 remain unchanged.
-- [x] Latest full automated validation after the procedural puzzle progression:
-  `npm test` passed (56 files, 318 tests); `npm run build` passed; `git diff --check`
-  passed. The production build reports a 2.014 MB minified main chunk (576.67
-  kB gzip), plus third-party annotation and chunk-size warnings.
-- [ ] Manual all-floor puzzle playthrough remains outstanding because browser
-  access was unavailable during the 2026-10-14 verification attempt.
-- [x] Current dependency audit was recorded in
-  `docs/dependency-audit-2026-10.md`: 23 production vulnerable package nodes
-  (22 moderate, 1 high) and 26 total (23 moderate, 1 high, 2 critical).
-  Findings remain release issues; no unsafe major upgrade was applied.
+Without `VITE_HEMI_NETWORK=mainnet`, the application defaults to Testnet. The
+Testnet and Mainnet addresses are configured independently; never place a
+private key or seed phrase in a Vite variable.
+
+The on-chain contract stores player-submitted TX1/TX2 commitments. It does not
+execute the game or independently prove a player's score. A non-empty
+`eth_getCode` result confirms deployed bytecode exists at the configured
+address; it does not prove bytecode/source equivalence or explorer verification.
+
+## Validation recorded 2026-10-27
+
+- [x] `npm test -- --reporter=dot --testTimeout=30000`: 59 files and 342 tests
+  passed. An initial run using Vitest's 5-second default timed out on the
+  128-seed encounter distribution test; the longer-timeout full rerun passed.
+- [x] `npm run build`: passed. The main JavaScript bundle exceeds Vite's
+  500 kB advisory threshold; dependency annotation and bundle-size warnings
+  remain non-fatal.
+- [x] Explicit Mainnet build with `VITE_HEMI_NETWORK=mainnet`: passed and
+  included the configured Mainnet address. Deployment environments must set
+  the same variable before rebuilding.
+- [x] `git diff --check`: passed.
+- [x] Asset-path and production manifest checks passed within the full test
+  suite. This does not replace browser network-request verification.
+- [x] Mainnet read-only `eth_getCode` returned non-empty bytecode at the
+  configured RunRegistry address. No deployment or transaction was performed.
+- [ ] Foundry compile/test was not part of this frontend release audit.
+- [ ] No live wallet run, complete five-floor browser playthrough, or ending
+  cinematic was manually verified.
+
+## Final release actions
+
+- [ ] Resolve the blocking items above and update their source documentation.
+- [ ] Run `npm ci`, the full test suite, standard and explicit Mainnet builds,
+  asset/link checks, and `git diff --check` on the exact release commit.
+- [ ] Review the staged file list for secrets, source assets, and unintended
+  outputs. `.env.local`, `dist/`, `node_modules/`, and `*.tsbuildinfo` are
+  ignored by Git; keep the tracked `.env.example` free of secrets.
+- [ ] Obtain a release-owner decision for any remaining security or rights
+  risks. Commit and push only after the blockers are cleared.

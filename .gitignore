@@ -7,4 +7,9 @@ coverage/
 !.env.example
 artifacts/
 cache/
+out/
+broadcast/
 typechain-types/
+/docs/audio/sources/music_scary_halloween_617002.mp3
+/docs/audio/sources/alesiadavina_demonic_guttural_growl_543180.mp3
+/docs/audio/sources/freeeverythingxx_woman_scream_268488.mp3

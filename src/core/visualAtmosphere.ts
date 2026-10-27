@@ -124,6 +124,21 @@ export function flashlightVisualFactor(tick: number, floor: number): number {
   return 0.975 + (phase < 7 ? phase * 0.0025 : Math.sin(phase * 0.024) * 0.0125 + 0.0125);
 }
 
+/** Convert a local lamp tint into a high-value multiply mask.
+ *
+ * The world lightmap is composited with MULTIPLY, so directly scaling a lamp
+ * colour makes the lit area darker. This lifts each channel toward white while
+ * retaining the lamp's cool/warm tint and leaves the surrounding darkness
+ * unchanged.
+ */
+export function environmentalLightMaskColor(color: number, intensity: number): number {
+  const amount = Math.max(0, Math.min(1, intensity));
+  const lift = (channel: number) => Math.round(channel + (255 - channel) * amount);
+  return (lift((color >> 16) & 0xff) << 16)
+    | (lift((color >> 8) & 0xff) << 8)
+    | lift(color & 0xff);
+}
+
 export function corruptionVisualStrength(floor: number, intensityPermille: number): number {
   const floorBaseline = floor === 0 ? 0.055 : floor === 1 ? 0.04 : floor === 2 ? 0.018 : 0;
   return Math.min(0.22, floorBaseline + Math.max(0, Math.min(1000, intensityPermille)) / 1000 * 0.16);

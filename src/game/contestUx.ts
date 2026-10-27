@@ -28,15 +28,6 @@ export type BlockTransitionBeat = { text: string; glitch?: boolean };
 
 /** Presentation-only fiction layered over the already-authoritative transition. */
 export function blockTransitionBeats(fromFloor: number, toFloor: number): BlockTransitionBeat[] {
-  if (fromFloor === 4 && toFloor === 3) {
-    return [
-      { text: 'FLOOR 4' },
-      { text: 'THE STAIRWELL IS COLDER.' },
-      { text: 'THE DOOR SHUTS BEHIND YOU.' },
-      { text: 'THE LIGHTS GO OUT.', glitch: true },
-      { text: 'FLOOR 3' },
-    ];
-  }
   if (fromFloor === 1 && toFloor === BLOCK_13_FLOOR) {
     return [
       { text: 'FLOOR 1' },

@@ -22,12 +22,36 @@ export function notebookEntryForSearch(floor: Floor, searchableIndex: number): N
   const objectiveStep = searchable.objectiveStep;
   const generated = objectiveStep === undefined ? undefined : floor.puzzle.clueTexts[objectiveStep];
   if (generated) {
-    const [title, ...body] = generated.split(': ');
+    const firstLineBreak = generated.search(/\r?\n/);
+    const firstLine = firstLineBreak < 0 ? generated : generated.slice(0, firstLineBreak);
+    const colon = firstLine.indexOf(': ');
+    const section = firstLine.indexOf(' // ');
+    const emDash = firstLine.indexOf(' — ');
+    let title: string;
+    let content: string;
+
+    if (colon >= 0) {
+      title = firstLine.slice(0, colon);
+      content = `${firstLine.slice(colon + 2)}${firstLineBreak < 0 ? '' : generated.slice(firstLineBreak)}`.trim();
+    } else if (section >= 0) {
+      title = firstLine.slice(0, section);
+      content = `${firstLine.slice(section + 4)}${firstLineBreak < 0 ? '' : generated.slice(firstLineBreak)}`.trim();
+    } else if (firstLineBreak >= 0) {
+      title = firstLine;
+      content = generated.slice(firstLineBreak).replace(/^\r?\n+/, '').trim();
+    } else if (emDash >= 0) {
+      title = firstLine.slice(0, emDash);
+      content = firstLine.slice(emDash + 3).trim();
+    } else {
+      title = `${floor.puzzle.title} // EVIDENCE ${(objectiveStep ?? 0) + 1}`;
+      content = generated;
+    }
+
     return {
       id: `${floor.puzzle.floor}:${searchableIndex}`,
       floor: floor.puzzle.floor,
       title: title || `${floor.puzzle.title} // EVIDENCE ${(objectiveStep ?? 0) + 1}`,
-      content: body.join(': ') || generated,
+      content: content || generated,
       important: true,
     };
   }

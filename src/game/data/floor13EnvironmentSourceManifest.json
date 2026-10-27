@@ -1,0 +1,707 @@
+{
+  "name": "Floor 13 Environment Pack",
+  "asset_count": 50,
+  "source": "Concept asset sheet generated specifically for Floor 13 with ChatGPT image generation, per project owner provenance statement (2026-10-27)",
+  "assets": [
+    {
+      "id": "floor_clean",
+      "category": "floors",
+      "width": 58,
+      "height": 59,
+      "source_bounds": [
+        28,
+        38,
+        86,
+        97
+      ],
+      "original": "original_crops/floors/floor_clean.png",
+      "transparent_candidate": "transparent/floors/floor_clean.png"
+    },
+    {
+      "id": "floor_cracked",
+      "category": "floors",
+      "width": 58,
+      "height": 61,
+      "source_bounds": [
+        210,
+        99,
+        268,
+        160
+      ],
+      "original": "original_crops/floors/floor_cracked.png",
+      "transparent_candidate": "transparent/floors/floor_cracked.png"
+    },
+    {
+      "id": "floor_stained",
+      "category": "floors",
+      "width": 59,
+      "height": 60,
+      "source_bounds": [
+        331,
+        38,
+        390,
+        98
+      ],
+      "original": "original_crops/floors/floor_stained.png",
+      "transparent_candidate": "transparent/floors/floor_stained.png"
+    },
+    {
+      "id": "floor_dark_patch",
+      "category": "floors",
+      "width": 60,
+      "height": 60,
+      "source_bounds": [
+        454,
+        99,
+        514,
+        159
+      ],
+      "original": "original_crops/floors/floor_dark_patch.png",
+      "transparent_candidate": "transparent/floors/floor_dark_patch.png"
+    },
+    {
+      "id": "door_wood",
+      "category": "doors",
+      "width": 58,
+      "height": 96,
+      "source_bounds": [
+        620,
+        45,
+        678,
+        141
+      ],
+      "original": "original_crops/doors/door_wood.png",
+      "transparent_candidate": "transparent/doors/door_wood.png"
+    },
+    {
+      "id": "door_metal",
+      "category": "doors",
+      "width": 59,
+      "height": 96,
+      "source_bounds": [
+        689,
+        45,
+        748,
+        141
+      ],
+      "original": "original_crops/doors/door_metal.png",
+      "transparent_candidate": "transparent/doors/door_metal.png"
+    },
+    {
+      "id": "door_green",
+      "category": "doors",
+      "width": 57,
+      "height": 96,
+      "source_bounds": [
+        827,
+        45,
+        884,
+        141
+      ],
+      "original": "original_crops/doors/door_green.png",
+      "transparent_candidate": "transparent/doors/door_green.png"
+    },
+    {
+      "id": "door_barricaded",
+      "category": "doors",
+      "width": 75,
+      "height": 92,
+      "source_bounds": [
+        825,
+        156,
+        900,
+        248
+      ],
+      "original": "original_crops/doors/door_barricaded.png",
+      "transparent_candidate": "transparent/doors/door_barricaded.png"
+    },
+    {
+      "id": "door_steel",
+      "category": "doors",
+      "width": 60,
+      "height": 96,
+      "source_bounds": [
+        961,
+        45,
+        1021,
+        141
+      ],
+      "original": "original_crops/doors/door_steel.png",
+      "transparent_candidate": "transparent/doors/door_steel.png"
+    },
+    {
+      "id": "ceiling_lamp",
+      "category": "electrical",
+      "width": 71,
+      "height": 35,
+      "source_bounds": [
+        1123,
+        54,
+        1194,
+        89
+      ],
+      "original": "original_crops/electrical/ceiling_lamp.png",
+      "transparent_candidate": "transparent/electrical/ceiling_lamp.png"
+    },
+    {
+      "id": "broken_light",
+      "category": "electrical",
+      "width": 83,
+      "height": 38,
+      "source_bounds": [
+        1220,
+        54,
+        1303,
+        92
+      ],
+      "original": "original_crops/electrical/broken_light.png",
+      "transparent_candidate": "transparent/electrical/broken_light.png"
+    },
+    {
+      "id": "hanging_bulb",
+      "category": "electrical",
+      "width": 36,
+      "height": 62,
+      "source_bounds": [
+        1383,
+        48,
+        1419,
+        110
+      ],
+      "original": "original_crops/electrical/hanging_bulb.png",
+      "transparent_candidate": "transparent/electrical/hanging_bulb.png"
+    },
+    {
+      "id": "fuse_panel",
+      "category": "electrical",
+      "width": 71,
+      "height": 66,
+      "source_bounds": [
+        1176,
+        191,
+        1247,
+        257
+      ],
+      "original": "original_crops/electrical/fuse_panel.png",
+      "transparent_candidate": "transparent/electrical/fuse_panel.png"
+    },
+    {
+      "id": "pipe_fixture",
+      "category": "electrical",
+      "width": 87,
+      "height": 68,
+      "source_bounds": [
+        1417,
+        189,
+        1504,
+        257
+      ],
+      "original": "original_crops/electrical/pipe_fixture.png",
+      "transparent_candidate": "transparent/electrical/pipe_fixture.png"
+    },
+    {
+      "id": "sofa_green",
+      "category": "furniture",
+      "width": 125,
+      "height": 73,
+      "source_bounds": [
+        32,
+        383,
+        157,
+        456
+      ],
+      "original": "original_crops/furniture/sofa_green.png",
+      "transparent_candidate": "transparent/furniture/sofa_green.png"
+    },
+    {
+      "id": "armchair",
+      "category": "furniture",
+      "width": 54,
+      "height": 63,
+      "source_bounds": [
+        171,
+        389,
+        225,
+        452
+      ],
+      "original": "original_crops/furniture/armchair.png",
+      "transparent_candidate": "transparent/furniture/armchair.png"
+    },
+    {
+      "id": "coffee_table",
+      "category": "furniture",
+      "width": 83,
+      "height": 70,
+      "source_bounds": [
+        237,
+        378,
+        320,
+        448
+      ],
+      "original": "original_crops/furniture/coffee_table.png",
+      "transparent_candidate": "transparent/furniture/coffee_table.png"
+    },
+    {
+      "id": "wardrobe",
+      "category": "furniture",
+      "width": 64,
+      "height": 75,
+      "source_bounds": [
+        406,
+        376,
+        470,
+        451
+      ],
+      "original": "original_crops/furniture/wardrobe.png",
+      "transparent_candidate": "transparent/furniture/wardrobe.png"
+    },
+    {
+      "id": "bed",
+      "category": "furniture",
+      "width": 76,
+      "height": 125,
+      "source_bounds": [
+        482,
+        375,
+        558,
+        500
+      ],
+      "original": "original_crops/furniture/bed.png",
+      "transparent_candidate": "transparent/furniture/bed.png"
+    },
+    {
+      "id": "dining_table",
+      "category": "furniture",
+      "width": 82,
+      "height": 72,
+      "source_bounds": [
+        238,
+        463,
+        320,
+        535
+      ],
+      "original": "original_crops/furniture/dining_table.png",
+      "transparent_candidate": "transparent/furniture/dining_table.png"
+    },
+    {
+      "id": "rug",
+      "category": "furniture",
+      "width": 150,
+      "height": 64,
+      "source_bounds": [
+        30,
+        532,
+        180,
+        596
+      ],
+      "original": "original_crops/furniture/rug.png",
+      "transparent_candidate": "transparent/furniture/rug.png"
+    },
+    {
+      "id": "dresser",
+      "category": "furniture",
+      "width": 83,
+      "height": 81,
+      "source_bounds": [
+        552,
+        520,
+        635,
+        601
+      ],
+      "original": "original_crops/furniture/dresser.png",
+      "transparent_candidate": "transparent/furniture/dresser.png"
+    },
+    {
+      "id": "kitchen_sink",
+      "category": "kitchen_bath",
+      "width": 123,
+      "height": 72,
+      "source_bounds": [
+        745,
+        385,
+        868,
+        457
+      ],
+      "original": "original_crops/kitchen_bath/kitchen_sink.png",
+      "transparent_candidate": "transparent/kitchen_bath/kitchen_sink.png"
+    },
+    {
+      "id": "stove",
+      "category": "kitchen_bath",
+      "width": 51,
+      "height": 71,
+      "source_bounds": [
+        871,
+        391,
+        922,
+        462
+      ],
+      "original": "original_crops/kitchen_bath/stove.png",
+      "transparent_candidate": "transparent/kitchen_bath/stove.png"
+    },
+    {
+      "id": "refrigerator",
+      "category": "kitchen_bath",
+      "width": 46,
+      "height": 109,
+      "source_bounds": [
+        1024,
+        374,
+        1070,
+        483
+      ],
+      "original": "original_crops/kitchen_bath/refrigerator.png",
+      "transparent_candidate": "transparent/kitchen_bath/refrigerator.png"
+    },
+    {
+      "id": "bathtub",
+      "category": "kitchen_bath",
+      "width": 110,
+      "height": 63,
+      "source_bounds": [
+        840,
+        515,
+        950,
+        578
+      ],
+      "original": "original_crops/kitchen_bath/bathtub.png",
+      "transparent_candidate": "transparent/kitchen_bath/bathtub.png"
+    },
+    {
+      "id": "toilet",
+      "category": "kitchen_bath",
+      "width": 36,
+      "height": 63,
+      "source_bounds": [
+        747,
+        519,
+        783,
+        582
+      ],
+      "original": "original_crops/kitchen_bath/toilet.png",
+      "transparent_candidate": "transparent/kitchen_bath/toilet.png"
+    },
+    {
+      "id": "locker_green",
+      "category": "storage",
+      "width": 71,
+      "height": 105,
+      "source_bounds": [
+        1089,
+        379,
+        1160,
+        484
+      ],
+      "original": "original_crops/storage/locker_green.png",
+      "transparent_candidate": "transparent/storage/locker_green.png"
+    },
+    {
+      "id": "shelf",
+      "category": "storage",
+      "width": 92,
+      "height": 102,
+      "source_bounds": [
+        1226,
+        380,
+        1318,
+        482
+      ],
+      "original": "original_crops/storage/shelf.png",
+      "transparent_candidate": "transparent/storage/shelf.png"
+    },
+    {
+      "id": "filing_cabinet",
+      "category": "storage",
+      "width": 57,
+      "height": 99,
+      "source_bounds": [
+        1327,
+        381,
+        1384,
+        480
+      ],
+      "original": "original_crops/storage/filing_cabinet.png",
+      "transparent_candidate": "transparent/storage/filing_cabinet.png"
+    },
+    {
+      "id": "wooden_crate",
+      "category": "storage",
+      "width": 65,
+      "height": 48,
+      "source_bounds": [
+        1153,
+        499,
+        1218,
+        547
+      ],
+      "original": "original_crops/storage/wooden_crate.png",
+      "transparent_candidate": "transparent/storage/wooden_crate.png"
+    },
+    {
+      "id": "storage_chest",
+      "category": "storage",
+      "width": 100,
+      "height": 40,
+      "source_bounds": [
+        1222,
+        516,
+        1322,
+        556
+      ],
+      "original": "original_crops/storage/storage_chest.png",
+      "transparent_candidate": "transparent/storage/storage_chest.png"
+    },
+    {
+      "id": "mailboxes",
+      "category": "investigation",
+      "width": 112,
+      "height": 90,
+      "source_bounds": [
+        834,
+        657,
+        946,
+        747
+      ],
+      "original": "original_crops/investigation/mailboxes.png",
+      "transparent_candidate": "transparent/investigation/mailboxes.png"
+    },
+    {
+      "id": "noticeboard",
+      "category": "investigation",
+      "width": 147,
+      "height": 89,
+      "source_bounds": [
+        955,
+        655,
+        1102,
+        744
+      ],
+      "original": "original_crops/investigation/noticeboard.png",
+      "transparent_candidate": "transparent/investigation/noticeboard.png"
+    },
+    {
+      "id": "floor_directory",
+      "category": "investigation",
+      "width": 127,
+      "height": 96,
+      "source_bounds": [
+        1111,
+        650,
+        1238,
+        746
+      ],
+      "original": "original_crops/investigation/floor_directory.png",
+      "transparent_candidate": "transparent/investigation/floor_directory.png"
+    },
+    {
+      "id": "fire_extinguisher",
+      "category": "investigation",
+      "width": 34,
+      "height": 85,
+      "source_bounds": [
+        1241,
+        655,
+        1275,
+        740
+      ],
+      "original": "original_crops/investigation/fire_extinguisher.png",
+      "transparent_candidate": "transparent/investigation/fire_extinguisher.png"
+    },
+    {
+      "id": "exit_sign",
+      "category": "investigation",
+      "width": 82,
+      "height": 42,
+      "source_bounds": [
+        931,
+        775,
+        1013,
+        817
+      ],
+      "original": "original_crops/investigation/exit_sign.png",
+      "transparent_candidate": "transparent/investigation/exit_sign.png"
+    },
+    {
+      "id": "scattered_papers",
+      "category": "clutter",
+      "width": 180,
+      "height": 41,
+      "source_bounds": [
+        28,
+        661,
+        208,
+        702
+      ],
+      "original": "original_crops/clutter/scattered_papers.png",
+      "transparent_candidate": "transparent/clutter/scattered_papers.png"
+    },
+    {
+      "id": "wall_clock",
+      "category": "clutter",
+      "width": 29,
+      "height": 33,
+      "source_bounds": [
+        263,
+        708,
+        292,
+        741
+      ],
+      "original": "original_crops/clutter/wall_clock.png",
+      "transparent_candidate": "transparent/clutter/wall_clock.png"
+    },
+    {
+      "id": "suitcase",
+      "category": "clutter",
+      "width": 50,
+      "height": 77,
+      "source_bounds": [
+        308,
+        754,
+        358,
+        831
+      ],
+      "original": "original_crops/clutter/suitcase.png",
+      "transparent_candidate": "transparent/clutter/suitcase.png"
+    },
+    {
+      "id": "trash_bag",
+      "category": "clutter",
+      "width": 45,
+      "height": 79,
+      "source_bounds": [
+        346,
+        753,
+        391,
+        832
+      ],
+      "original": "original_crops/clutter/trash_bag.png",
+      "transparent_candidate": "transparent/clutter/trash_bag.png"
+    },
+    {
+      "id": "rubble_pile",
+      "category": "damage",
+      "width": 214,
+      "height": 78,
+      "source_bounds": [
+        846,
+        666,
+        1060,
+        744
+      ],
+      "original": "original_crops/damage/rubble_pile.png",
+      "transparent_candidate": "transparent/damage/rubble_pile.png"
+    },
+    {
+      "id": "trash_bags",
+      "category": "damage",
+      "width": 112,
+      "height": 62,
+      "source_bounds": [
+        837,
+        758,
+        949,
+        820
+      ],
+      "original": "original_crops/damage/trash_bags.png",
+      "transparent_candidate": "transparent/damage/trash_bags.png"
+    },
+    {
+      "id": "broken_planks",
+      "category": "damage",
+      "width": 143,
+      "height": 40,
+      "source_bounds": [
+        1032,
+        704,
+        1175,
+        744
+      ],
+      "original": "original_crops/damage/broken_planks.png",
+      "transparent_candidate": "transparent/damage/broken_planks.png"
+    },
+    {
+      "id": "dark_floor_stain",
+      "category": "damage",
+      "width": 183,
+      "height": 46,
+      "source_bounds": [
+        1210,
+        660,
+        1393,
+        706
+      ],
+      "original": "original_crops/damage/dark_floor_stain.png",
+      "transparent_candidate": "transparent/damage/dark_floor_stain.png"
+    },
+    {
+      "id": "cracked_wall",
+      "category": "damage",
+      "width": 68,
+      "height": 88,
+      "source_bounds": [
+        1452,
+        665,
+        1520,
+        753
+      ],
+      "original": "original_crops/damage/cracked_wall.png",
+      "transparent_candidate": "transparent/damage/cracked_wall.png"
+    },
+    {
+      "id": "dead_potted_plant",
+      "category": "decor",
+      "width": 49,
+      "height": 99,
+      "source_bounds": [
+        1215,
+        731,
+        1264,
+        830
+      ],
+      "original": "original_crops/decor/dead_potted_plant.png",
+      "transparent_candidate": "transparent/decor/dead_potted_plant.png"
+    },
+    {
+      "id": "vent",
+      "category": "decor",
+      "width": 40,
+      "height": 39,
+      "source_bounds": [
+        1460,
+        779,
+        1500,
+        818
+      ],
+      "original": "original_crops/decor/vent.png",
+      "transparent_candidate": "transparent/decor/vent.png"
+    },
+    {
+      "id": "stairs",
+      "category": "decor",
+      "width": 64,
+      "height": 103,
+      "source_bounds": [
+        769,
+        892,
+        833,
+        995
+      ],
+      "original": "original_crops/decor/stairs.png",
+      "transparent_candidate": "transparent/decor/stairs.png"
+    },
+    {
+      "id": "barricade",
+      "category": "decor",
+      "width": 58,
+      "height": 116,
+      "source_bounds": [
+        1035,
+        886,
+        1093,
+        1002
+      ],
+      "original": "original_crops/decor/barricade.png",
+      "transparent_candidate": "transparent/decor/barricade.png"
+    }
+  ]
+}

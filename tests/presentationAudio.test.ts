@@ -177,7 +177,7 @@ describe('presentation audio mapping', () => {
 
   it('uses the approved music bed across every playable floor', () => {
     for (const floor of [4, 3, 2, 1, 0]) {
-    expect(floorMusicTrack(floor)).toEqual({ key: 'music_scary_halloween', gain: 0.22 });
+    expect(floorMusicTrack(floor)).toEqual({ key: 'music_scary_halloween', gain: floor === 0 ? 0.05775 : 0.165 });
     }
     expect(floorMusicTrack(-1)).toBeUndefined();
     expect(floorMusicTrack(5)).toBeUndefined();

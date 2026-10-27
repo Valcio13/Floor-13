@@ -44,6 +44,8 @@ export const AUDIO_ASSET_CATALOG: Readonly<Record<string, string>> = {
   sfx_ambusher_warning: assetPath('audio/enemies/ambusher/sfx_ambusher_warning.ogg'),
   sfx_ambusher_attack: assetPath('audio/enemies/ambusher/sfx_ambusher_attack.ogg'),
   sfx_mimic_reveal: assetPath('audio/enemies/mimic/sfx_mimic_reveal.ogg'),
+  sfx_haunting_growl: assetPath('audio/enemies/haunting/sfx_haunting_growl.ogg'),
+  sfx_haunting_scream: assetPath('audio/enemies/haunting/sfx_haunting_scream.ogg'),
   sfx_floor_transition: assetPath('audio/effects/sfx_floor_transition.ogg'),
   sfx_block13_reveal: assetPath('audio/effects/sfx_block13_reveal.ogg'),
   sfx_final_chase_stinger: assetPath('audio/effects/sfx_final_chase_stinger.ogg'),
@@ -82,5 +84,7 @@ export const AUDIO_ASSET_MANIFEST: Readonly<Record<string, string>> = {
   sfx_crawler_skitter_1: AUDIO_ASSET_CATALOG.sfx_crawler_skitter_1,
   sfx_crawler_skitter_2: AUDIO_ASSET_CATALOG.sfx_crawler_skitter_2,
   sfx_mimic_reveal: AUDIO_ASSET_CATALOG.sfx_mimic_reveal,
+  sfx_haunting_growl: AUDIO_ASSET_CATALOG.sfx_haunting_growl,
+  sfx_haunting_scream: AUDIO_ASSET_CATALOG.sfx_haunting_scream,
   sfx_ambusher_warning: AUDIO_ASSET_CATALOG.sfx_ambusher_warning,
 };

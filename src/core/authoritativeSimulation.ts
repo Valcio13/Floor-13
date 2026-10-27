@@ -198,7 +198,7 @@ const STALKER_SPECS = {
 
 /** Enemy rosters are deliberately sparse under Floor 13 rules v1. */
 export const ENCOUNTER_ROSTER_BOUNDS = {
-  4: { crawlers: [0, 0], watchers: [0, 0], ambushers: [0, 0] },
+  4: { crawlers: [1, 1], watchers: [0, 0], ambushers: [0, 0] },
   3: { crawlers: [1, 1], watchers: [0, 0], ambushers: [0, 1] },
   2: { crawlers: [1, 1], watchers: [0, 1], ambushers: [1, 1] },
   1: { crawlers: [2, 2], watchers: [1, 1], ambushers: [1, 1] },
@@ -330,7 +330,10 @@ export class AuthoritativeSimulation {
 
     let crawlerCount = 0, watcherCount = 0, ambusherCount = 0;
     switch (s.floor) {
-      case 4: break;
+      // The introductory floor has one distant crawler so a normal route can
+      // include a readable enemy encounter without changing the safe stalker
+      // window or adding pressure near the lockbox.
+      case 4: crawlerCount = 1; break;
       case 3: crawlerCount = 1; ambusherCount = this.ambusherRng.nextInt() % 2; break;
       case 2: crawlerCount = 1; watcherCount = this.watcherRng.nextInt() % 2; ambusherCount = 1; break;
       case 1: crawlerCount = 2; watcherCount = 1; ambusherCount = 1; break;

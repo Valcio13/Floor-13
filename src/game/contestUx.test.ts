@@ -20,9 +20,7 @@ describe('contest UX presentation helpers', () => {
     expect(blockTransitionBeats(1, 0).map(beat => beat.text)).toEqual([
       'FLOOR 1', 'GROUND FLOOR', '…', 'ROUTE NOT FOUND', '…', 'FLOOR 13', 'THIS FLOOR DOES NOT EXIST.',
     ]);
-    expect(blockTransitionBeats(4, 3).map(beat => beat.text)).toEqual([
-      'FLOOR 4', 'THE STAIRWELL IS COLDER.', 'THE DOOR SHUTS BEHIND YOU.', 'THE LIGHTS GO OUT.', 'FLOOR 3',
-    ]);
+    expect(blockTransitionBeats(4, 3)).toEqual([]);
     expect(blockTransitionBeats(2, 1)).toEqual([]);
   });
 

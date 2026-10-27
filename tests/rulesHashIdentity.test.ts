@@ -4,7 +4,7 @@ import { deriveSeeds, type RunManifest } from '../src/core/seedDerivation';
 import { finalStateV1FromTerminalState } from '../src/core/finalStateV1';
 import type { AuthoritativeState } from '../src/core/authoritativeSimulation';
 import { RUN_REGISTRY_ABI } from '../src/web3/config';
-import { ARCHIVE_GAME_VERSION, ARCHIVE_RULES_HASH, ARCHIVE_RULES_IDENTIFIER, GAME_VERSION, GAME_VERSION_BYTES32, HISTORICAL_GAME_VERSION, HISTORICAL_RULES_HASH, HISTORICAL_RULES_IDENTIFIER, LEGACY_GAME_VERSION, LEGACY_RULES_HASH, LEGACY_RULES_IDENTIFIER, PREVIOUS_GAME_VERSION, PREVIOUS_RULES_HASH, PREVIOUS_RULES_IDENTIFIER, PROCEDURAL_PUZZLE_GAME_VERSION, PROCEDURAL_PUZZLE_RULES_HASH, PROCEDURAL_PUZZLE_RULES_IDENTIFIER, RULES_HASH, RULES_IDENTIFIER } from '../src/web3/runIdentity';
+import { ARCHIVE_GAME_VERSION, ARCHIVE_RULES_HASH, ARCHIVE_RULES_IDENTIFIER, GAME_VERSION, GAME_VERSION_BYTES32, HISTORICAL_GAME_VERSION, HISTORICAL_RULES_HASH, HISTORICAL_RULES_IDENTIFIER, LEGACY_GAME_VERSION, LEGACY_RULES_HASH, LEGACY_RULES_IDENTIFIER, PREVIOUS_GAME_VERSION, PREVIOUS_RULES_HASH, PREVIOUS_RULES_IDENTIFIER, PRE_CONTAINER_DENSITY_RULES_HASH, PRE_CONTAINER_DENSITY_RULES_IDENTIFIER, PROCEDURAL_PUZZLE_GAME_VERSION, PROCEDURAL_PUZZLE_RULES_HASH, PROCEDURAL_PUZZLE_RULES_IDENTIFIER, RULES_HASH, RULES_IDENTIFIER } from '../src/web3/runIdentity';
 
 const manifest: RunManifest = {
   runId: 7n,
@@ -40,7 +40,10 @@ describe('canonical TX1 rules identity', () => {
     expect(PROCEDURAL_PUZZLE_GAME_VERSION).toBe('0.6.0');
     expect(PROCEDURAL_PUZZLE_RULES_IDENTIFIER).toBe('floor13-procedural-puzzles-floor-progression-v1');
     expect(PROCEDURAL_PUZZLE_RULES_HASH).toBe(keccak256(toBytes(PROCEDURAL_PUZZLE_RULES_IDENTIFIER)));
-    expect(RULES_IDENTIFIER).toBe('floor13-procedural-puzzles-floor-progression-v9-global-horror-feedback-balance');
+    expect(PRE_CONTAINER_DENSITY_RULES_IDENTIFIER).toBe('floor13-procedural-puzzles-floor-progression-v9-global-horror-feedback-balance');
+    expect(PRE_CONTAINER_DENSITY_RULES_HASH).toBe(keccak256(toBytes(PRE_CONTAINER_DENSITY_RULES_IDENTIFIER)));
+    expect(RULES_IDENTIFIER).toBe('floor13-procedural-puzzles-floor-progression-v10-reduced-containers-resource-retune');
+    expect(RULES_HASH).not.toBe(PRE_CONTAINER_DENSITY_RULES_HASH);
     expect(PREVIOUS_RULES_IDENTIFIER).toBe('classic-maintenance-lockbox-v1-static-walls-balance-v2-stalker-mimic-v1');
     expect(PREVIOUS_RULES_HASH).toBe(keccak256(toBytes(PREVIOUS_RULES_IDENTIFIER)));
     expect(ARCHIVE_GAME_VERSION).toBe('0.5.0');

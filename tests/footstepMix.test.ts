@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PLAYER_FOOTSTEP_COOLDOWN_MS, PLAYER_FOOTSTEP_MIN_TICK_INTERVAL, PLAYER_FOOTSTEP_VARIANT_GAINS, shouldPlayFootstep } from '../src/game/footstepMix';
+import { BLOCK13_PLAYER_FOOTSTEP_GAIN_SCALE, PLAYER_FOOTSTEP_COOLDOWN_MS, PLAYER_FOOTSTEP_MIN_TICK_INTERVAL, PLAYER_FOOTSTEP_VARIANT_GAINS, playerFootstepVariantGains, shouldPlayFootstep } from '../src/game/footstepMix';
 
 describe('player footstep presentation mix', () => {
   it('keeps footsteps restrained and spaces cues enough to reduce overlap', () => {
@@ -13,5 +13,10 @@ describe('player footstep presentation mix', () => {
     expect(shouldPlayFootstep(10, 30)).toBe(false);
     expect(shouldPlayFootstep(10, 31)).toBe(true);
     expect(shouldPlayFootstep(10, 31)).toBe(shouldPlayFootstep(10, 31));
+  });
+
+  it('attenuates only the player footsteps on Floor 13', () => {
+    expect(playerFootstepVariantGains(0)).toEqual(PLAYER_FOOTSTEP_VARIANT_GAINS.map(gain => gain * BLOCK13_PLAYER_FOOTSTEP_GAIN_SCALE));
+    expect(playerFootstepVariantGains(4)).toEqual([...PLAYER_FOOTSTEP_VARIANT_GAINS]);
   });
 });

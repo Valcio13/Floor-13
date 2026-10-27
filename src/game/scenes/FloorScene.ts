@@ -4,17 +4,17 @@ import { AudioDirector, AUDIO_KEYS } from '../../core/audioDirector';
 import { SimulationEngine } from '../../core/simulationEngine';
 import { InputPipeline, InputRecorder, InputReplayer, LiveInputSource, type InputSource, type InputState } from '../../core/inputRecorder';
 import { firstMimicTwitchDelay, mimicTwitch } from '../../core/cosmeticAnimation';
-import { AMBUSHER_PRE_IMPACT_AMBIENCE_GAIN, audioCuesForEvents, audioCuesForStateChange, floorAmbienceKeys, floorMusicTrack, FLOOR_MUSIC_PREVIEW, playAmbusherImpact, type AudioCue, type FloorMusicTrack } from '../../core/presentationAudio';
+import { AMBUSHER_PRE_IMPACT_AMBIENCE_GAIN, audioCuesForEvents, audioCuesForStateChange, floorAmbienceKeys, floorMusicTrack, FLOOR_MUSIC_PREVIEW, hauntingWhisperAudioCue, playAmbusherImpact, type AudioCue, type FloorMusicTrack } from '../../core/presentationAudio';
 import type { Floor, Searchable } from '../../core/floor';
 import type { RunState } from '../../core/run';
-import { AuthoritativeSimulation, authoritativeLineOfSight, FIXED_SCALE, type AuthoritativeState } from '../../core/authoritativeSimulation';
+import { AuthoritativeSimulation, authoritativeLineOfSight, FIXED_SCALE, INTERACTION_RANGE_SUBPIXELS, type AuthoritativeState } from '../../core/authoritativeSimulation';
 import { encodeFinalStateV1, finalStateV1FromSimulation, hashFinalStateV1 } from '../../core/finalStateV1';
 import { keccak256, toHex } from 'viem';
 import { getAuthoredClueForSearchId } from '../../core/clues';
 import { addNotebookDiscovery, addNotebookSearchEvents, discoveredObjectiveSteps, emptyNotebookJournal, type NotebookEntry, type NotebookJournal } from '../investigationNotebook';
 import { recordsMayBeCompared } from '../puzzlePresentation';
 import { formatFixedPointPercent, formatWholePercent } from '../../core/uiFormatting';
-import { architecturalMarkAt, corruptionVisualStrength, floorAmbientVisibility, floorFlashlightContrast, floorVisualProfile, flashlightVisualFactor, surfaceColorGrade, tileDressingAt } from '../../core/visualAtmosphere';
+import { architecturalMarkAt, corruptionVisualStrength, environmentalLightMaskColor, floorAmbientVisibility, floorFlashlightContrast, floorVisualProfile, flashlightVisualFactor, surfaceColorGrade, tileDressingAt } from '../../core/visualAtmosphere';
 import {
   BLOCK13_ASSET_MANIFEST,
   BLOCK13_MAP_TEXTURE_KEY,
@@ -25,7 +25,7 @@ import {
   block13SurfaceAssetAt,
   block13WallEdgeRotations,
 } from '../block13Assets';
-import { isBlock13Floor, START_FLOOR } from '../../core/progression';
+import { isBlock13Floor } from '../../core/progression';
 import { enemyPresentationExposure, hasPresentationLineOfSight } from '../presentationVisibility';
 import { collectOccludedLightRays, type OccludedRay } from '../lightOcclusion';
 import {
@@ -67,6 +67,12 @@ import {
   type OrdinaryEnvironmentAssetName,
 } from '../environmentAssets';
 import {
+  FLOOR13_ENVIRONMENT_APPROVED_ASSETS,
+  FLOOR13_ENVIRONMENT_ASSET_REGISTRY,
+  productionEnvironmentPlacements,
+  type EnvironmentPackAssetId,
+} from '../productionEnvironment';
+import {
   inferStalkerVisualFacing,
   stalkerMovedBetween,
   stalkerTextureKeyForFacing,
@@ -90,6 +96,9 @@ import {
   mimicTextureKey,
   ambusherWarningAlpha,
   enemyEyeGlowAlpha,
+  lampJumpscareRoll,
+  LAMP_JUMPSCARE_COOLDOWN_TICKS,
+  LAMP_JUMPSCARE_DURATION_MS,
   watcherGazeAudioPosition,
   watcherTextureKey,
 } from '../enemyAssets';
@@ -97,13 +106,14 @@ import { NARRATIVE_ASSET_MANIFEST, OPENING_CINEMATIC, shouldPlayOpeningCinematic
 import { HauntingDirector, HorrorPacingModel, HauntingSilence, hauntingPresentationAllowed, hauntingWhisperLine, type HauntingEvent, type HauntingEventType } from '../hauntingDirector';
 import { interactionPrompt, rejectedInteractionFeedback } from '../interactionPresentation';
 import { hashAuthoritativeState } from '../../core/runRecovery';
-import { PLAYER_FOOTSTEP_COOLDOWN_MS, PLAYER_FOOTSTEP_VARIANT_GAINS, shouldPlayFootstep } from '../footstepMix';
+import { PLAYER_FOOTSTEP_COOLDOWN_MS, playerFootstepVariantGains, shouldPlayFootstep } from '../footstepMix';
 import { CONTAINER_SCARE_STATUS_TEXT, containerScareSearchIndex, containerScareShouldPlay, containerScareStyle } from '../containerScare';
 import { stalkerNearMissCueAvailable, stalkerNearMissState } from '../stalkerPresentation';
 import { accessiblePresentationIntensity, finalChaseAmbienceGain, genericScareCameraKick, stalkerHuntScale } from '../accessibilityPresentation';
 import { activeCameraZoom } from '../cameraConfig';
 import { clueModalHeight, temporaryMessageDuration, temporaryMessageLayout } from '../uiLayout';
-import { environmentalLightBrightness, environmentalLightProfile, type EnvironmentalLightProfile } from '../proceduralLighting';
+import { environmentalLightBrightness, environmentalLightProfile, lampOpenSide, lampSpriteRotation, type EnvironmentalLightProfile } from '../proceduralLighting';
+import { lorePaperPlacements, type LorePaperPlacement } from '../lorePapers';
 import {
   BLOCK3_REFINED_EXPERIMENT_ASSETS,
   block3RoomNoticeTile,
@@ -130,6 +140,12 @@ interface SearchableSprite {
   searched: boolean;
 }
 
+interface LorePaperSprite {
+  placement: LorePaperPlacement;
+  sprite: Phaser.GameObjects.Image;
+  halo: Phaser.GameObjects.Arc;
+}
+
 const FLASHLIGHT_HALF_ANGLES = [35, 32, 28, 24, 20].map(angle => Phaser.Math.DegToRad(angle));
 
 export class FloorScene extends Phaser.Scene {
@@ -139,6 +155,7 @@ export class FloorScene extends Phaser.Scene {
   private ordinaryEnvironmentImage?: Phaser.GameObjects.Image;
   private block3VisualMode: Block3VisualMode = 'original';
   private block3VisualKeyHandler?: (event: KeyboardEvent) => void;
+  private developmentHudKeyHandler?: (event: KeyboardEvent) => void;
   private player!: Phaser.GameObjects.Sprite;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: { w: Phaser.Input.Keyboard.Key; a: Phaser.Input.Keyboard.Key; s: Phaser.Input.Keyboard.Key; d: Phaser.Input.Keyboard.Key };
@@ -151,6 +168,8 @@ export class FloorScene extends Phaser.Scene {
   private keyHalo!: Phaser.GameObjects.Arc;
   private stairsHalo!: Phaser.GameObjects.Arc;
   private searchableSprites: SearchableSprite[] = [];
+  private lorePaperSprites: LorePaperSprite[] = [];
+  private pendingLorePaperId?: string;
   private hasKey = false;
   private stairsUnlocked = false;
 
@@ -165,6 +184,11 @@ export class FloorScene extends Phaser.Scene {
   private mimicTwitchStates: Map<Phaser.GameObjects.Sprite, { nextTick: number; entityId: number }> = new Map();
   private mimicRevealElapsedMs = new Map<Phaser.GameObjects.Sprite, number>();
   private statusText!: Phaser.GameObjects.Text;
+  private hudFloorText!: Phaser.GameObjects.Text;
+  private hudEvidenceText!: Phaser.GameObjects.Text;
+  private hudWarningsText!: Phaser.GameObjects.Text;
+  private hudCurseText!: Phaser.GameObjects.Text;
+  private hudScoreText!: Phaser.GameObjects.Text;
   private interactPrompt!: Phaser.GameObjects.Text;
   private puzzlePanel?: Phaser.GameObjects.Rectangle;
   private puzzlePanelText?: Phaser.GameObjects.Text;
@@ -183,9 +207,13 @@ export class FloorScene extends Phaser.Scene {
   private puzzleFallbackLabel?: Phaser.GameObjects.Text;
   private puzzleCloseRequested = false;
   private controlsHint!: Phaser.GameObjects.Text;
+  private hudRightText!: Phaser.GameObjects.Text;
   private healthBarBg!: Phaser.GameObjects.Rectangle;
   private healthBarFill!: Phaser.GameObjects.Graphics;
   private healthBarText!: Phaser.GameObjects.Text;
+  private batteryBarText!: Phaser.GameObjects.Text;
+  private batteryBarBg!: Phaser.GameObjects.Rectangle;
+  private batteryBarFill!: Phaser.GameObjects.Graphics;
   private uiCamera!: Phaser.Cameras.Scene2D.Camera; // Dedicated UI camera
   private flashlightOn = false;
   private lightmapTexture!: Phaser.GameObjects.RenderTexture;
@@ -196,7 +224,7 @@ export class FloorScene extends Phaser.Scene {
   private flashlightLightRays: OccludedRay[] = [];
   private flashlightBoundaryAngles: number[] = new Array(FLASHLIGHT_HALF_ANGLES.length * 2).fill(0);
   private flickeringLampPositions: Array<{ x: number; y: number; signal: boolean; profile: EnvironmentalLightProfile }> = [];
-  private flickeringLampFixtures: Phaser.GameObjects.Graphics[] = [];
+  private flickeringLampFixtures: Array<Phaser.GameObjects.Graphics | Phaser.GameObjects.Image> = [];
   private lastLampJumpscareTick = Number.NEGATIVE_INFINITY;
   private damageVignette!: Phaser.GameObjects.Graphics;
   private corruptionVignette!: Phaser.GameObjects.Graphics;
@@ -298,6 +326,7 @@ export class FloorScene extends Phaser.Scene {
     this.block3VisualMode = 'original';
     this.ordinaryEnvironmentImage = undefined;
     this.block3VisualKeyHandler = undefined;
+    this.developmentHudKeyHandler = undefined;
 
     // Reset per-floor state
     this.hasKey = false;
@@ -306,6 +335,8 @@ export class FloorScene extends Phaser.Scene {
     this.playerIsMoving = false;
     this.playerWalkAnimationElapsedMs = 0;
     this.searchableSprites = [];
+    this.lorePaperSprites = [];
+    this.pendingLorePaperId = undefined;
     this.crawlerPresentation.clear();
     this.crawlerWarningNextCueAt.clear();
     this.watcherSprites = [];
@@ -361,6 +392,12 @@ export class FloorScene extends Phaser.Scene {
     // Phaser restarts this Scene instance. Clear every presentation reference
     // here so create() cannot accidentally touch a destroyed floor's objects.
     this.statusText = undefined as unknown as Phaser.GameObjects.Text;
+    this.hudFloorText = undefined as unknown as Phaser.GameObjects.Text;
+    this.hudEvidenceText = undefined as unknown as Phaser.GameObjects.Text;
+    this.hudWarningsText = undefined as unknown as Phaser.GameObjects.Text;
+    this.hudCurseText = undefined as unknown as Phaser.GameObjects.Text;
+    this.hudScoreText = undefined as unknown as Phaser.GameObjects.Text;
+    this.hudRightText = undefined as unknown as Phaser.GameObjects.Text;
     this.puzzlePanel = undefined;
     this.puzzlePanelText = undefined;
     this.puzzlePanelArt = undefined;
@@ -373,6 +410,9 @@ export class FloorScene extends Phaser.Scene {
     this.healthBarBg = undefined as unknown as Phaser.GameObjects.Rectangle;
     this.healthBarFill = undefined as unknown as Phaser.GameObjects.Graphics;
     this.healthBarText = undefined as unknown as Phaser.GameObjects.Text;
+    this.batteryBarText = undefined as unknown as Phaser.GameObjects.Text;
+    this.batteryBarBg = undefined as unknown as Phaser.GameObjects.Rectangle;
+    this.batteryBarFill = undefined as unknown as Phaser.GameObjects.Graphics;
     this.uiCamera = undefined as unknown as Phaser.Cameras.Scene2D.Camera;
     this.lightmapTexture = undefined as unknown as Phaser.GameObjects.RenderTexture;
     this.lightmapGraphics = undefined as unknown as Phaser.GameObjects.Graphics;
@@ -472,6 +512,7 @@ export class FloorScene extends Phaser.Scene {
 
     // Create searchable objects
     this.createSearchables(searchables);
+    this.createLorePapers();
     this.createPuzzleMarkers();
 
     // Create key sprite
@@ -602,15 +643,23 @@ export class FloorScene extends Phaser.Scene {
     }
 
     // Floor info with run state
-    this.statusText = this.add.text(16, 16, '', {
-      fontFamily: 'monospace',
-      fontSize: '13px',
-      color: '#70d4c6',
-      backgroundColor: '#070d12',
-      padding: { x: 12, y: 8 },
-      lineSpacing: 4,
-    }).setScrollFactor(0).setDepth(100);
     const compactHud = this.scale.height < 420 || this.scale.width < 640;
+    const hudTextWidth = Math.min(460, Math.max(240, this.cameras.main.width * 0.42));
+    const hudFont = compactHud ? '10px' : '12px';
+    this.hudFloorText = this.add.text(18, 14, '', {
+      fontFamily: 'monospace', fontSize: compactHud ? '10px' : '11px', color: '#75a9a6', letterSpacing: 1,
+      stroke: '#030609', strokeThickness: 3,
+    }).setScrollFactor(0).setDepth(100);
+    this.statusText = this.add.text(18, 32, '', {
+      fontFamily: 'monospace',
+      fontSize: hudFont, color: '#e5e2d9',
+      wordWrap: { width: hudTextWidth, useAdvancedWrap: true }, lineSpacing: 2,
+      stroke: '#030609', strokeThickness: 3,
+    }).setScrollFactor(0).setDepth(100);
+    this.hudEvidenceText = this.add.text(18, 70, '', {
+      fontFamily: 'monospace', fontSize: compactHud ? '9px' : '10px', color: '#8dada9', letterSpacing: 1,
+      stroke: '#030609', strokeThickness: 3,
+    }).setScrollFactor(0).setDepth(100);
     const densePuzzle = this.floorData.puzzle.kind === 'memory' || this.floorData.puzzle.kind === 'records';
     const puzzlePanelW = Math.min(600, this.scale.width - 28);
     const puzzlePanelH = Math.min(densePuzzle ? 560 : 430, this.scale.height - 28);
@@ -638,7 +687,8 @@ export class FloorScene extends Phaser.Scene {
       }
     ).setOrigin(0.5).setScrollFactor(0).setDepth(100).setVisible(false);
 
-    // Compact controls legend. Detailed controls remain available in pause.
+    // Controls remain available through How to Play and the pause menu; keep
+    // the gameplay viewport free of a permanent instruction/debug legend.
     this.controlsHint = this.add.text(16, this.cameras.main.height - 100, [
       'WASD / ARROWS MOVE  ·  F LIGHT  ·  E INTERACT', 'TAB NOTEBOOK  ·  ESC PAUSE',
       ...(this.isDevelopmentBlock3VisualComparisonAvailable() ? ['F8 - BLOCK 3 ART: ORIGINAL'] : []),
@@ -649,23 +699,22 @@ export class FloorScene extends Phaser.Scene {
       backgroundColor: '#07090d',
       padding: { x: 8, y: 4 },
       lineSpacing: 3,
-    }).setScrollFactor(0).setDepth(100);
+    }).setScrollFactor(0).setDepth(100).setVisible(false);
 
-    // Create horizontal health bar at top center
-    const healthBarWidth = 300;
-    const healthBarHeight = 20;
-    const healthBarX = this.cameras.main.width / 2;
-    const healthBarY = 20;
+    // Compact resource cluster at top-right. Values remain sourced from the
+    // authoritative run state; only their presentation is reorganized.
+    const healthBarWidth = 100;
+    const healthBarHeight = 7;
+    const resourceRight = this.cameras.main.width - 18;
+    const healthBarX = resourceRight - 99;
+    const healthBarY = 24;
+    const healthLabel = this.add.text(resourceRight - 232, healthBarY, 'HP', {
+      fontFamily: 'monospace', fontSize: hudFont, color: '#b78b8c',
+      stroke: '#030609', strokeThickness: 3,
+    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(102);
 
-    // Background (dark) - using Graphics for better control
-    this.healthBarBg = this.add.rectangle(
-      healthBarX,
-      healthBarY,
-      healthBarWidth,
-      healthBarHeight,
-      0x1a1a1a,
-      1
-    ).setScrollFactor(0).setDepth(100);
+    this.healthBarBg = this.add.rectangle(healthBarX, healthBarY, healthBarWidth, healthBarHeight, 0x342427, 0.9)
+      .setScrollFactor(0).setDepth(100);
 
     // Health fill - using Graphics object instead of Rectangle
     const fillGraphics = this.add.graphics();
@@ -674,26 +723,66 @@ export class FloorScene extends Phaser.Scene {
 
     // HP text overlay
     this.healthBarText = this.add.text(
-      healthBarX,
+      resourceRight,
       healthBarY,
       `${Math.floor(this.runState.hp)} / 100 HP`,
       {
-        fontFamily: 'monospace',
-        fontSize: '12px',
-        color: '#ffffff',
+        fontFamily: 'monospace', fontSize: hudFont, color: '#ddd2cf', align: 'right',
+        stroke: '#030609', strokeThickness: 3,
       }
-    ).setOrigin(0.5).setScrollFactor(0).setDepth(102);
+    ).setOrigin(1, 0.5).setScrollFactor(0).setDepth(102);
+
+    const batteryBarY = 46;
+    const batteryLabel = this.add.text(resourceRight - 232, batteryBarY, 'BAT', {
+      fontFamily: 'monospace', fontSize: hudFont, color: '#b4a17b',
+      stroke: '#030609', strokeThickness: 3,
+    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(102);
+    this.batteryBarBg = this.add.rectangle(healthBarX, batteryBarY, healthBarWidth, healthBarHeight, 0x342f22, 0.9)
+      .setScrollFactor(0).setDepth(100);
+    this.batteryBarFill = this.add.graphics().setScrollFactor(0).setDepth(101);
+    this.batteryBarText = this.add.text(resourceRight, batteryBarY, `${formatWholePercent(this.runState.battery)}%`, {
+      fontFamily: 'monospace', fontSize: hudFont, color: '#d6c49c', align: 'right',
+      stroke: '#030609', strokeThickness: 3,
+    }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(102);
+    this.hudRightText = this.add.text(resourceRight, 66, '', {
+      fontFamily: 'monospace', fontSize: hudFont, color: '#bdc5bf', align: 'right',
+      stroke: '#030609', strokeThickness: 3,
+    }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(102);
+    this.hudWarningsText = this.add.text(resourceRight - 232, 86, '', {
+      fontFamily: 'monospace', fontSize: compactHud ? '9px' : '10px', color: '#d39a52',
+      wordWrap: { width: 224, useAdvancedWrap: true }, maxLines: 1,
+      stroke: '#030609', strokeThickness: 3,
+    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(102);
+    this.hudCurseText = this.add.text(18, this.cameras.main.height - 18, '', {
+      fontFamily: 'monospace', fontSize: compactHud ? '9px' : '10px', color: '#859795',
+      stroke: '#030609', strokeThickness: 3,
+    }).setOrigin(0, 1).setScrollFactor(0).setDepth(100);
+    this.hudScoreText = this.add.text(this.cameras.main.width - 18, this.cameras.main.height - 18, '', {
+      fontFamily: 'monospace', fontSize: compactHud ? '9px' : '10px', color: '#859795', align: 'right',
+      stroke: '#030609', strokeThickness: 3,
+    }).setOrigin(1, 1).setScrollFactor(0).setDepth(100);
 
     this.updateHealthBar();
 
     // Make UI camera only render HUD elements
     this.cameras.main.ignore([
       this.statusText,
+      this.hudFloorText,
+      this.hudEvidenceText,
+      this.hudWarningsText,
+      this.hudCurseText,
+      this.hudScoreText,
+      this.hudRightText,
       this.interactPrompt,
       this.controlsHint,
       this.healthBarBg,
       this.healthBarFill,
-      this.healthBarText
+      this.healthBarText,
+      this.batteryBarText,
+      this.batteryBarBg,
+      this.batteryBarFill,
+      healthLabel,
+      batteryLabel,
     ]);
 
     // All lifecycle-owned HUD objects must be recreated before any updater
@@ -798,6 +887,7 @@ export class FloorScene extends Phaser.Scene {
         this.playerDeath();
       }
     });
+    this.presentPendingLorePaper();
 
     const persistRecovery = this.registry.get('persistRunRecovery') as ((log: Uint8Array, state: AuthoritativeState) => void) | undefined;
     if (persistRecovery && (tick % 60 === 59 || this.authoritativeSimulation.state.status !== 'playing')) {
@@ -914,7 +1004,8 @@ export class FloorScene extends Phaser.Scene {
           this.showClueModal(puzzleClue ? `${this.floorData.puzzle.title} // EVIDENCE ${objectiveStep! + 1}` : clue?.title ?? 'NOTE FOUND', puzzleClue ?? clue?.content ?? 'The writing is too faded to read.', true);
         } else if (result.type === 'nothing') this.showTemporaryMessage('EMPTY', '#a5b6b5');
         else this.showTemporaryMessage('MIMIC REVEALED — RUN', '#ff6666');
-      } else if (event.type === 'floor_transition' && event.toFloor >= 0) {
+      } else if (event.type === 'floor_transition' && event.toFloor >= 0
+        && !(event.fromFloor === 4 && event.toFloor === 3)) {
         this.showTemporaryMessage(`${playerBlockName(event.toFloor)} UNLOCKED`, '#ffd700');
       }
       if (event.type === 'loot_searched' && this.authoritativeSimulation.state.status === 'playing') {
@@ -999,20 +1090,21 @@ export class FloorScene extends Phaser.Scene {
         this.showHauntingVisual(event.type, event.id, event.durationMs);
         break;
       case 'whisper':
-        this.showHauntingWhisper(event.id, event.durationMs);
+        if (this.showHauntingWhisper(event.id, event.durationMs)) this.playAudioCue(hauntingWhisperAudioCue(event.id));
         break;
     }
   }
 
-  private showHauntingWhisper(eventId: number, durationMs: number) {
-    if (!this.hauntingWhisper) return;
+  private showHauntingWhisper(eventId: number, durationMs: number): boolean {
+    if (!this.hauntingWhisper) return false;
     this.hauntingVisual?.setVisible(false);
     const tile = this.findHauntingTile(true, eventId);
-    if (!tile) return;
+    if (!tile) return false;
     this.hauntingWhisper.setText(hauntingWhisperLine(eventId, tile[0], tile[1]))
       .setPosition(tile[0] * this.tileSize + 16, tile[1] * this.tileSize + 16)
       .setAlpha(0.88).setVisible(true);
     this.hauntingWhisperRemainingMs = durationMs;
+    return true;
   }
 
   private findHauntingTile(walkable: boolean, eventId: number): [number, number] | undefined {
@@ -1146,7 +1238,7 @@ export class FloorScene extends Phaser.Scene {
     image.setScale(Math.max(this.uiCamera.width / asset.width, this.uiCamera.height / asset.height) * 1.04);
     this.cameras.main.ignore(image);
     this.lampJumpscareImage = image;
-    this.lampJumpscareRemainingMs = 560;
+    this.lampJumpscareRemainingMs = LAMP_JUMPSCARE_DURATION_MS;
     this.markTextureNearest(asset.key);
     return true;
   }
@@ -1160,7 +1252,9 @@ export class FloorScene extends Phaser.Scene {
     }
     this.lampJumpscareRemainingMs -= Number.isFinite(delta) && delta > 0 ? delta : 0;
     const reduced = this.audioDirector?.getSettings().reduceJumpscareIntensity ?? false;
-    this.lampJumpscareImage.setAlpha(Math.max(0, Math.min(1, this.lampJumpscareRemainingMs / 260)) * (reduced ? 0.72 : 1));
+    const elapsedMs = LAMP_JUMPSCARE_DURATION_MS - this.lampJumpscareRemainingMs;
+    const fadeAlpha = elapsedMs < 140 ? 1 : Math.max(0, Math.min(1, (LAMP_JUMPSCARE_DURATION_MS - elapsedMs) / 580));
+    this.lampJumpscareImage.setAlpha(fadeAlpha * (reduced ? 0.72 : 1));
     if (this.lampJumpscareRemainingMs <= 0) this.clearLampJumpscare();
   }
 
@@ -1357,6 +1451,11 @@ export class FloorScene extends Phaser.Scene {
       director.playWithCooldown(audioCue.key, 'sfx', audioCue.cooldownMs, { volume: 0.48 });
     } else if (audioCue.key === 'sfx_floor_transition') {
       director.playWithCooldown(audioCue.key, 'sfx', audioCue.cooldownMs, { volume: 0.5 });
+    } else if (audioCue.key === 'sfx_haunting_growl' || audioCue.key === 'sfx_haunting_scream') {
+      const reduced = audioCue.key === 'sfx_haunting_scream' && director.getSettings().reduceJumpscareIntensity;
+      director.playWithCooldown(audioCue.key, 'sfx', audioCue.cooldownMs, {
+        volume: (audioCue.volume ?? 0.16) * (reduced ? 0.56 : 1),
+      });
     } else if (audioCue.positional) {
       const reduced = director.getSettings().reduceJumpscareIntensity;
       const intensityScale = reduced && audioCue.key === 'sfx_ambusher_warning' ? 0.56 : 1;
@@ -1654,7 +1753,7 @@ export class FloorScene extends Phaser.Scene {
         'sfx',
         PLAYER_FOOTSTEP_COOLDOWN_MS,
         undefined,
-        PLAYER_FOOTSTEP_VARIANT_GAINS,
+        playerFootstepVariantGains(state.floor),
       );
       this.lastFootstepTick = state.tick;
     }
@@ -1684,7 +1783,8 @@ export class FloorScene extends Phaser.Scene {
   }
 
   private updateAuthoritativePrompt(state: AuthoritativeState) {
-    const prompt = interactionPrompt(state, this.floorData);
+    const prompt = interactionPrompt(state, this.floorData)
+      || (this.nearbyLorePaper(state) ? '[E] READ PAPER' : '');
     this.interactPrompt.setText(prompt);
     this.interactPrompt.setVisible(prompt.length > 0);
   }
@@ -1927,6 +2027,7 @@ export class FloorScene extends Phaser.Scene {
         entry.evidenceLabel.setAlpha(tickPulse);
       }
     });
+    this.lorePaperSprites.forEach(({ sprite, halo }) => updateHalo(halo, sprite.x, sprite.y, true));
   }
 
   /** Visual-only tile ray. It only suppresses accents behind walls; it never changes interaction rules. */
@@ -1959,6 +2060,10 @@ export class FloorScene extends Phaser.Scene {
   private readKeyboardInput(): InputState {
     const justPressedF = Phaser.Input.Keyboard.JustDown(this.flashlightKey);
     const justPressedE = Phaser.Input.Keyboard.JustDown(this.interactKey);
+    const currentState = this.authoritativeSimulation.state;
+    const gameplayPrompt = interactionPrompt(currentState, this.floorData);
+    const lorePaper = justPressedE && !gameplayPrompt ? this.nearbyLorePaper(currentState) : undefined;
+    if (lorePaper) this.pendingLorePaperId = lorePaper.placement.document.id;
     const closePuzzle = this.puzzleCloseRequested;
     this.puzzleCloseRequested = false;
 
@@ -1968,7 +2073,8 @@ export class FloorScene extends Phaser.Scene {
       up: this.cursors.up.isDown || this.wasd.w.isDown,
       down: this.cursors.down.isDown || this.wasd.s.isDown,
       flashlight: justPressedF || closePuzzle,
-      interact: justPressedE,
+      // Lore inspection is cosmetic and intentionally stays out of InputLogV2.
+      interact: justPressedE && !lorePaper,
     };
   }
 
@@ -2042,33 +2148,44 @@ export class FloorScene extends Phaser.Scene {
       const playerDistance = Math.hypot(lamp.x - originX, lamp.y - originY);
       // Rare, but reachable during a normal run: being near a lamp is enough;
       // the player's flashlight no longer suppresses this presentation scare.
-      const scareRoll = (Math.imul(lamp.profile.seed ^ state.tick, 0x45d9f3b) >>> 0) % 503;
-      if (playerDistance <= 138 && state.tick - this.lastLampJumpscareTick >= 900
+      const scareRoll = lampJumpscareRoll(lamp.profile.seed, state.tick);
+      if (playerDistance <= 138 && state.tick - this.lastLampJumpscareTick >= LAMP_JUMPSCARE_COOLDOWN_TICKS
         && state.tick % 10 === 0 && lamp.profile.type === 'failing' && intensity <= 0.1 && scareRoll === 0 && this.canStartHaunting(state)) {
         const eventId = Math.imul(lamp.profile.seed ^ state.tick, 0x45d9f3b) >>> 0;
         const authoredScareShown = this.startLampJumpscare(eventId);
         if (!authoredScareShown) this.showHauntingVisual('silhouette', eventId, 560);
         if (this.lampJumpscareImage?.visible || this.hauntingVisual?.visible) {
           const reduced = this.audioDirector?.getSettings().reduceJumpscareIntensity ?? false;
-          this.cameras.main.flash(reduced ? 22 : 38, 190, 166, 178);
+          this.cameras.main.flash(reduced ? 24 : 52, 190, 166, 178);
           this.playAudioCue({ key: 'sfx_jumpscare_hit', cooldownMs: 1800, volume: reduced ? 0.08 : 0.12 });
           this.hauntingDirector.registerMajorEncounter(state.tick, 180);
           this.lastLampJumpscareTick = state.tick;
         }
       }
       if (intensity > 0) {
+        // Use several low-contrast rings instead of two opaque polygons. The
+        // outer rings keep the light continuous across floor tiles while the
+        // inner rings preserve player visibility under an active lamp. The
+        // seeded intensity still scales every ring, so flicker and failure
+        // phases affect the rendered light as well as the fixture sprite.
+        const lampRadius = lamp.signal ? 82 : 58;
         const lampRays = collectOccludedLightRays(
-          this.floorData, lamp.x, lamp.y, lamp.signal ? 82 : 58, -Math.PI, Math.PI,
+          this.floorData, lamp.x, lamp.y, lampRadius, -Math.PI, Math.PI,
           3, [], [], [],
         );
-        this.drawOccludedLightShape(
-          lampRays, lamp.x, lamp.y, lamp.signal ? 82 : 58,
-          scaleColor(profile.ambient, 0.44 * intensity),
-        );
-        this.drawOccludedLightShape(
-          lampRays, lamp.x, lamp.y, 34,
-          scaleColor(profile.ambient, 0.66 * intensity),
-        );
+        const lampRings = [
+          [lampRadius, 0.08],
+          [Math.round(lampRadius * 0.88), 0.16],
+          [Math.round(lampRadius * 0.74), 0.27],
+          [Math.round(lampRadius * 0.59), 0.41],
+          [34, 0.66],
+        ] as const;
+        for (const [radius, ringIntensity] of lampRings) {
+          this.drawOccludedLightShape(
+            lampRays, lamp.x, lamp.y, radius,
+            environmentalLightMaskColor(profile.ambient, ringIntensity * intensity),
+          );
+        }
       }
     }
 
@@ -2135,12 +2252,17 @@ export class FloorScene extends Phaser.Scene {
       `${this.floorData.exit[0]},${this.floorData.exit[1]}`,
       ...this.floorData.searchables.map(item => `${item.x},${item.y}`),
     ]);
-    const candidates: Array<{ x: number; y: number; score: number }> = [];
+    const candidates: Array<{ x: number; y: number; score: number; rotation: number }> = [];
     if (floor >= 1 && floor <= 4) {
       const decorations = ordinaryMapDecorationPlacements(floor, tiles, this.floorData.doors, importantTiles);
       for (const placement of decorations) {
         if (placement.asset !== 'wall_lamp_01') continue;
-        candidates.push({ x: placement.x, y: placement.y, score: ordinaryEnvironmentCoordinateHash(floor, placement.x, placement.y) });
+        candidates.push({
+          x: placement.x,
+          y: placement.y,
+          score: ordinaryEnvironmentCoordinateHash(floor, placement.x, placement.y),
+          rotation: lampSpriteRotation(lampOpenSide(tiles, placement.x, placement.y)),
+        });
       }
     } else {
       // Block 13 has no ordinary lamp asset, so choose a few clean wall cells
@@ -2150,7 +2272,7 @@ export class FloorScene extends Phaser.Scene {
         if (![tiles[y - 1]?.[x], tiles[y]?.[x + 1], tiles[y + 1]?.[x], tiles[y]?.[x - 1]].some(Boolean)) continue;
         const score = ordinaryEnvironmentCoordinateHash(floor, x, y);
         if (score % 173 > 8) continue;
-        candidates.push({ x, y, score });
+        candidates.push({ x, y, score, rotation: lampSpriteRotation(lampOpenSide(tiles, x, y)) });
       }
     }
     candidates.sort((a, b) => a.score - b.score);
@@ -2159,11 +2281,22 @@ export class FloorScene extends Phaser.Scene {
       const worldY = candidate.y * this.tileSize + 16;
       const profile = environmentalLightProfile(floor, index, candidate.score);
       this.flickeringLampPositions.push({ x: worldX, y: worldY, profile, signal: index === 0 });
-      const fixture = this.add.graphics().setDepth(2);
-      fixture.fillStyle(floor === 0 ? 0x8c6678 : 0xc4a46d, 0.9);
-      fixture.fillRect(worldX - 3, worldY - 3, 6, 4);
-      fixture.fillStyle(floor === 0 ? 0xd29aaf : 0xf2d798, 0.95);
-      fixture.fillRect(worldX - 2, worldY - 2, 4, 2);
+      const lampAsset = FLOOR13_ENVIRONMENT_ASSET_REGISTRY.find(asset => asset.id === 'ceiling_lamp');
+      let fixture: Phaser.GameObjects.Graphics | Phaser.GameObjects.Image;
+      if (lampAsset && this.textures.exists(lampAsset.key)) {
+        this.textures.get(lampAsset.key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+        fixture = this.add.image(worldX, worldY, lampAsset.key)
+          .setDisplaySize(lampAsset.displayWidth, lampAsset.displayHeight)
+          .setRotation(candidate.rotation)
+          .setDepth(2);
+      } else {
+        const fallback = this.add.graphics().setDepth(2);
+        fallback.fillStyle(floor === 0 ? 0x8c6678 : 0xc4a46d, 0.9);
+        fallback.fillRect(worldX - 3, worldY - 3, 6, 4);
+        fallback.fillStyle(floor === 0 ? 0xd29aaf : 0xf2d798, 0.95);
+        fallback.fillRect(worldX - 2, worldY - 2, 4, 2);
+        fixture = fallback.setRotation(candidate.rotation);
+      }
       this.flickeringLampFixtures.push(fixture);
     }
   }
@@ -2308,16 +2441,19 @@ export class FloorScene extends Phaser.Scene {
     this.renderNotebook();
     this.notebookKeyHandler = event => {
       if (!this.notebookOpen) return;
-      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      const key = event.key.toLowerCase();
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || key === 'a' || key === 'd') {
         const floors = [4, 3, 2, 1, 0];
         const at = floors.indexOf(this.notebookFloor);
-        this.notebookFloor = floors[(at + (event.key === 'ArrowRight' ? 1 : floors.length - 1)) % floors.length];
+        const moveNext = event.key === 'ArrowRight' || key === 'd';
+        this.notebookFloor = floors[(at + (moveNext ? 1 : floors.length - 1)) % floors.length];
         this.notebookEntryIndex = 0;
         this.renderNotebook();
         event.preventDefault();
-      } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+      } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown' || key === 'w' || key === 's') {
         const entries = this.notebookEntriesForFloor(this.notebookFloor);
-        this.notebookEntryIndex = Phaser.Math.Clamp(this.notebookEntryIndex + (event.key === 'ArrowDown' ? 1 : -1), 0, Math.max(0, entries.length - 1));
+        const moveNext = event.key === 'ArrowDown' || key === 's';
+        this.notebookEntryIndex = Phaser.Math.Clamp(this.notebookEntryIndex + (moveNext ? 1 : -1), 0, Math.max(0, entries.length - 1));
         this.renderNotebook();
         event.preventDefault();
       } else if (event.key === 'Escape') {
@@ -2364,14 +2500,13 @@ export class FloorScene extends Phaser.Scene {
     const tabX = left + 14;
     const tabWidth = (panelW - 28) / floorLabels.length;
     floorLabels.forEach(([floor, label], index) => {
-      const shortLabel = `BLOCK ${floor === 0 ? '13' : floor}`;
       const x = tabX + tabWidth * (index + 0.5);
       const active = floor === this.notebookFloor;
       const count = this.notebookEntriesForFloor(floor).length;
       const tab = add(this.add.rectangle(x, tabY, tabWidth - 6, 36, active ? 0x354957 : 0x202d36, 1)
         .setScrollFactor(0).setDepth(704).setStrokeStyle(1, active ? 0xe29354 : 0x40515c, 1)
         .setInteractive({ useHandCursor: true }));
-      add(this.add.text(x, tabY - 4, shortLabel, {
+      add(this.add.text(x, tabY - 4, label, {
         fontFamily: 'monospace', fontSize: compact ? '9px' : '11px', color: active ? '#f3eee6' : '#b6c0c4', fontStyle: active ? 'bold' : 'normal',
       }).setOrigin(0.5).setScrollFactor(0).setDepth(705));
       add(this.add.text(x, tabY + 10, `${count} ${count === 1 ? 'NOTE' : 'NOTES'}`, {
@@ -2387,7 +2522,7 @@ export class FloorScene extends Phaser.Scene {
     const detailX = railX + railW + 16, detailW = left + panelW - 18 - detailX;
     add(this.add.rectangle(railX + railW / 2, (contentTop + contentBottom) / 2, railW, contentBottom - contentTop, 0x0d151c, 1)
       .setScrollFactor(0).setDepth(703).setStrokeStyle(1, 0x2f414c, 1));
-    add(this.add.text(railX + 14, contentTop + 12, `${this.notebookFloor === 0 ? 'BLOCK 13' : `BLOCK ${this.notebookFloor}`}  ·  ${entries.length} FOUND`, {
+    add(this.add.text(railX + 14, contentTop + 12, `${this.notebookFloor === 0 ? 'FLOOR 13' : `FLOOR ${this.notebookFloor}`}  ·  ${entries.length} FOUND`, {
       fontFamily: 'monospace', fontSize: compact ? '9px' : '10px', color: '#bdc7cb', fontStyle: 'bold',
     }).setScrollFactor(0).setDepth(704));
     add(this.add.rectangle(railX + railW / 2, contentTop + 34, railW - 20, 1, 0x354751, 1).setScrollFactor(0).setDepth(704));
@@ -2397,7 +2532,7 @@ export class FloorScene extends Phaser.Scene {
       add(this.add.text(detailX + 22, contentTop + 28, 'NO DOCUMENTS RECOVERED', {
         fontFamily: 'monospace', fontSize: compact ? '12px' : '15px', color: '#263139', fontStyle: 'bold',
       }).setScrollFactor(0).setDepth(704));
-      add(this.add.text(detailX + 22, contentTop + 62, 'Evidence you collect on this block will be filed here.', {
+      add(this.add.text(detailX + 22, contentTop + 62, 'Evidence you collect on this floor will be filed here.', {
         fontFamily: 'monospace', fontSize: compact ? '11px' : '13px', color: '#46535a', lineSpacing: 5,
         wordWrap: { width: detailW - 44, useAdvancedWrap: true },
       }).setScrollFactor(0).setDepth(704));
@@ -2422,18 +2557,18 @@ export class FloorScene extends Phaser.Scene {
       add(this.add.text(detailX + 22, contentTop + 20, `DOCUMENT ${String(this.notebookEntryIndex + 1).padStart(2, '0')} / ${String(entries.length).padStart(2, '0')}`, {
         fontFamily: 'monospace', fontSize: compact ? '9px' : '10px', color: '#53636a', letterSpacing: 1,
       }).setScrollFactor(0).setDepth(704));
-      add(this.add.text(detailX + 22, contentTop + 48, selected.title, {
+      const titleText = add(this.add.text(detailX + 22, contentTop + 48, selected.title, {
         fontFamily: 'monospace', fontSize: compact ? '13px' : '17px', color: '#17242a', fontStyle: 'bold',
         wordWrap: { width: detailW - 44, useAdvancedWrap: true },
       }).setScrollFactor(0).setDepth(704));
-      const dividerY = contentTop + (compact ? 92 : 104);
+      const dividerY = Math.max(contentTop + (compact ? 92 : 104), titleText.getBounds().bottom + 12);
       add(this.add.rectangle(detailX + detailW / 2, dividerY, detailW - 44, 1, 0x9aa5a4, 1).setScrollFactor(0).setDepth(704));
       add(this.add.text(detailX + 22, dividerY + 18, selected.content, {
         fontFamily: 'monospace', fontSize: compact ? '12px' : '14px', color: '#252f33', lineSpacing: compact ? 4 : 8,
         wordWrap: { width: detailW - 44, useAdvancedWrap: true },
       }).setScrollFactor(0).setDepth(704));
     }
-    add(this.add.text(cx, top + panelH - 24, '← / → BLOCK     ↑ / ↓ NOTE     TAB / SPACE / ESC CLOSE', {
+    add(this.add.text(cx, top + panelH - 24, 'A / D or ← / → FLOOR     W / S or ↑ / ↓ NOTE     TAB / SPACE / ESC CLOSE', {
       fontFamily: 'monospace', fontSize: compact ? '9px' : '11px', color: '#d5dfe2', letterSpacing: 1,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(704).setInteractive({ useHandCursor: true })
       .on('pointerdown', () => this.closeNotebook()));
@@ -2695,47 +2830,30 @@ export class FloorScene extends Phaser.Scene {
   }
 
   private updateStatusText() {
-    const batteryColor = this.runState.battery > 50 ? '#70d4c6' : this.runState.battery > 20 ? '#ffd700' : '#ff4444';
-    const hpColor = this.runState.hp > 50 ? '#70d4c6' : this.runState.hp > 25 ? '#ffd700' : '#ff4444';
-    const flashStatus = this.flashlightOn ? 'ON' : 'OFF';
+    const flashStatus = this.runState.battery <= 0 ? 'OFF' : this.flashlightOn ? 'ON' : 'OFF';
 
-    // Display floor name
-    const floorDisplay = isBlock13Floor(this.runState.floor)
-      ? playerBlockName(this.runState.floor)
-      : `${playerBlockName(this.runState.floor)}/${START_FLOOR}`;
+    const floorDisplay = `FLOOR ${isBlock13Floor(this.runState.floor) ? '13' : String(this.runState.floor).padStart(2, '0')}`;
     const simulationState = this.authoritativeSimulation.state;
     const objectiveProgress = this.floorData.objectives.searchableIndices.filter(index => simulationState.searched[index]).length;
     this.block13ObjectiveStatus = simulationState.puzzle.fallbackActive && !simulationState.puzzle.fallbackItemFound
       ? `OBJECTIVE: FIND THE ${this.puzzleFallbackItemLabel(simulationState.floor)}`
-      : objectiveCopy(simulationState.floor, simulationState.hasKey, simulationState.stalker.state === 'hunting', simulationState.objectiveComplete, objectiveProgress, this.floorData.objectives.searchableIndices.length);
+      : objectiveCopy(simulationState.floor, simulationState.hasKey, simulationState.stalker.state === 'hunting', simulationState.objectiveComplete);
 
-    const lines = [
-      floorDisplay,
-      ...(this.block13ObjectiveStatus ? [this.block13ObjectiveStatus] : []),
-      '',
-      `HP: ${Math.floor(this.runState.hp)}/100`,
-      `CURSE: ${formatWholePercent(this.runState.curse)}%`,
-      `BATTERY: ${formatWholePercent(this.runState.battery)}%`,
-      `SCORE: ${this.runState.score}`,
-      `LIGHT: ${flashStatus}`,
-      ...(hudWarningCopy({ hp: simulationState.hp, battery: simulationState.battery / FIXED_SCALE, curse: simulationState.curse / FIXED_SCALE }).length
-        ? ['', ...hudWarningCopy({ hp: simulationState.hp, battery: simulationState.battery / FIXED_SCALE, curse: simulationState.curse / FIXED_SCALE })]
-        : []),
-    ];
-    this.statusText.setText(lines.join('\n'));
-
-    // Update color based on most critical resource
-    if (this.runState.hp <= 25) {
-      this.statusText.setColor(hpColor);
-    } else if (this.runState.battery <= 20) {
-      this.statusText.setColor(batteryColor);
-    } else if (this.runState.curse >= 85) {
-      this.statusText.setColor('#ff4444');
-    } else if (this.runState.curse > 50) {
-      this.statusText.setColor('#ffd700');
-    } else {
-      this.statusText.setColor('#70d4c6');
-    }
+    const evidenceTotal = this.floorData.objectives.searchableIndices.length;
+    const evidenceLine = evidenceTotal > 0 ? `EVIDENCE  ${objectiveProgress}/${evidenceTotal}` : '';
+    const batteryWarnings = simulationState.battery <= 0
+      ? ['BATTERY EMPTY']
+      : hudWarningCopy({ hp: 100, battery: simulationState.battery / FIXED_SCALE, curse: 0 });
+    this.hudFloorText.setText(floorDisplay);
+    this.statusText.setText(this.block13ObjectiveStatus?.replace(/^OBJECTIVE:\s*/, '') ?? 'INVESTIGATE THE BUILDING');
+    this.hudEvidenceText.setText(evidenceLine);
+    this.hudEvidenceText.setY(32 + Math.max(18, this.statusText.height + 4));
+    this.hudRightText.setText(`FLASHLIGHT  ${flashStatus}`);
+    this.hudWarningsText.setText(batteryWarnings.join('  ·  '));
+    this.hudWarningsText.setColor(simulationState.battery <= 0 ? '#c8786e' : '#d0a15c');
+    this.hudCurseText.setText(`CURSE  ${formatWholePercent(this.runState.curse)}%`);
+    this.hudCurseText.setColor(this.runState.curse >= 85 ? '#a86e6d' : '#859795');
+    this.hudScoreText.setText(`SCORE  ${this.runState.score}`);
 
     // Update health bar
     this.updateHealthBar();
@@ -2747,10 +2865,11 @@ export class FloorScene extends Phaser.Scene {
       return;
     }
 
-    const maxWidth = 300;
-    const healthBarHeight = 16; // Slightly smaller than background
-    const healthBarX = this.cameras.main.width / 2;
-    const healthBarY = 20;
+    const maxWidth = 100;
+    const healthBarHeight = 7;
+    const resourceRight = this.cameras.main.width - 18;
+    const healthBarX = resourceRight - 99;
+    const healthBarY = 24;
 
     const hpPercent = Math.max(0, Math.min(1, this.runState.hp / 100));
     const currentWidth = maxWidth * hpPercent;
@@ -2760,13 +2879,9 @@ export class FloorScene extends Phaser.Scene {
 
     // Determine color based on HP
     let fillColor: number;
-    if (this.runState.hp > 50) {
-      fillColor = 0x70d4c6; // Cyan (healthy)
-    } else if (this.runState.hp > 25) {
-      fillColor = 0xffd700; // Gold (warning)
-    } else {
-      fillColor = 0xff4444; // Red (critical)
-    }
+    if (this.runState.hp <= 25) fillColor = 0xb64f52;
+    else if (this.runState.hp <= 50) fillColor = 0x895054;
+    else fillColor = 0x75474b;
 
     // Draw the health bar (from left edge)
     (this.healthBarFill as Phaser.GameObjects.Graphics).fillStyle(fillColor, 1);
@@ -2778,7 +2893,17 @@ export class FloorScene extends Phaser.Scene {
     );
 
     // Update tex
-    this.healthBarText.setText(`${Math.floor(this.runState.hp)} / 100 HP`);
+    this.healthBarText.setText(`${Math.floor(this.runState.hp)}/100`);
+    this.healthBarText.setColor(this.runState.hp <= 25 ? '#d9928e' : '#ddd2cf');
+    this.batteryBarText.setText(`${formatWholePercent(this.runState.battery)}%`);
+    this.batteryBarText.setColor(this.runState.battery <= 10 ? '#d9928e' : '#d6c49c');
+
+    const batteryPercent = Math.max(0, Math.min(1, this.runState.battery / 100));
+    const batteryWidth = maxWidth * batteryPercent;
+    const batteryColor = this.runState.battery > 20 ? 0x9a7941 : this.runState.battery > 0 ? 0xc18c3d : 0xb64f52;
+    this.batteryBarFill.clear();
+    this.batteryBarFill.fillStyle(batteryColor, 1);
+    this.batteryBarFill.fillRect(healthBarX - maxWidth / 2, 46 - healthBarHeight / 2, batteryWidth, healthBarHeight);
   }
 
   private drawFloor(tiles: boolean[][]) {
@@ -2798,6 +2923,11 @@ export class FloorScene extends Phaser.Scene {
     for (const name of Object.keys(ORDINARY_ENVIRONMENT_ASSET_MANIFEST) as OrdinaryEnvironmentAssetName[]) {
       const source = this.getOrdinaryEnvironmentAssetSource(name);
       if (source) sources.set(name, source);
+    }
+    const productionSources = new Map<string, CanvasImageSource>();
+    for (const asset of FLOOR13_ENVIRONMENT_APPROVED_ASSETS) {
+      const source = this.getProductionEnvironmentAssetSource(asset.id as EnvironmentPackAssetId);
+      if (source) productionSources.set(asset.id, source);
     }
     const useRefinedBlock3 = import.meta.env.DEV && floor === 3 && this.block3VisualMode === 'refined';
     const experimentSources = new Map<Block3ExperimentTextureKey, CanvasImageSource>();
@@ -2832,7 +2962,9 @@ export class FloorScene extends Phaser.Scene {
       `${this.floorData.start[0]},${this.floorData.start[1]}`,
       `${this.floorData.key[0]},${this.floorData.key[1]}`,
       `${this.floorData.exit[0]},${this.floorData.exit[1]}`,
+      `${this.floorData.puzzleDevice[0]},${this.floorData.puzzleDevice[1]}`,
       ...this.floorData.searchables.map(item => `${item.x},${item.y}`),
+      ...(this.floorData.puzzleFallbackSite ? [`${this.floorData.puzzleFallbackSite[0]},${this.floorData.puzzleFallbackSite[1]}`] : []),
     ]);
     const doorTiles = new Set(this.floorData.doors.map(([x, y]) => `${x},${y}`));
     const protectedTiles = new Set([...importantTiles, ...doorTiles]);
@@ -2933,10 +3065,17 @@ export class FloorScene extends Phaser.Scene {
     // Small wall-mounted details stay in the static map layer, beneath actors
     // and the existing runtime lighting composition.
     const decorations = ordinaryMapDecorationPlacements(floor, tiles, this.floorData.doors, importantTiles);
+    const existingDecorationTiles = new Set(decorations.map(item => `${item.x},${item.y}`));
+    const activeLampTiles = new Set(decorations
+      .filter(item => item.asset === 'wall_lamp_01')
+      .sort((a, b) => ordinaryEnvironmentCoordinateHash(floor, a.x, a.y) - ordinaryEnvironmentCoordinateHash(floor, b.x, b.y))
+      .slice(0, 5)
+      .map(item => `${item.x},${item.y}`));
     const propPlacement = useRefinedBlock3 ? decorations.find(item => item.asset === 'wall_lamp_01') : undefined;
     const decorativeProp = useRefinedBlock3 ? this.getBlock3ExperimentAssetSource('dev_b3_decorative_prop') : null;
     const roomNoticeTile = useRefinedBlock3 ? block3RoomNoticeTile(tiles, this.floorData.doors, protectedTiles) : null;
     for (const { asset, x, y } of decorations) {
+      if (asset === 'wall_lamp_01' && activeLampTiles.has(`${x},${y}`)) continue;
       if (decorativeProp && propPlacement?.x === x && propPlacement.y === y) continue;
       if (roomNoticeTile?.[0] === x && roomNoticeTile[1] === y) {
         const notice = experimentSources.get('dev_b3_room_notice');
@@ -2968,6 +3107,16 @@ export class FloorScene extends Phaser.Scene {
         48,
       );
     }
+
+    const productionDecorations = productionEnvironmentPlacements(
+      floor,
+      tiles,
+      this.floorData.rooms,
+      this.floorData.doors,
+      importantTiles,
+      existingDecorationTiles,
+    );
+    this.drawProductionEnvironmentPlacements(context, productionDecorations, productionSources);
 
     // These coordinates already represent open passages in Floor.doors.
     const threshold = sources.get('threshold');
@@ -3019,6 +3168,12 @@ export class FloorScene extends Phaser.Scene {
 
   private bindDevelopmentBlock3VisualToggle() {
     if (!this.isDevelopmentBlock3VisualComparisonAvailable()) return;
+    this.developmentHudKeyHandler = event => {
+      if (event.repeat || event.code !== 'F1') return;
+      event.preventDefault();
+      this.controlsHint?.setVisible(!this.controlsHint.visible);
+    };
+    this.input.keyboard?.on('keydown', this.developmentHudKeyHandler);
     this.block3VisualKeyHandler = event => {
       if (event.repeat || event.code !== 'F8') return;
       this.block3VisualMode = nextBlock3VisualMode(this.block3VisualMode);
@@ -3094,6 +3249,40 @@ export class FloorScene extends Phaser.Scene {
     const width = source.naturalWidth || source.width;
     const height = source.naturalHeight || source.height;
     return width === asset.width && height === asset.height ? source : null;
+  }
+
+  private getProductionEnvironmentAssetSource(id: EnvironmentPackAssetId): CanvasImageSource | null {
+    const asset = FLOOR13_ENVIRONMENT_ASSET_REGISTRY.find(entry => entry.id === id);
+    if (!asset || asset.placement === 'excluded' || !this.textures.exists(asset.key)) return null;
+    const texture = this.textures.get(asset.key);
+    texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+    const source = texture.getSourceImage() as CanvasImageSource & { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number };
+    const width = source.naturalWidth || source.width;
+    const height = source.naturalHeight || source.height;
+    return width === asset.sourceWidth && height === asset.sourceHeight ? source : null;
+  }
+
+  /** Draw reviewed environment props into the static map texture beneath actors and lighting. */
+  private drawProductionEnvironmentPlacements(
+    context: CanvasRenderingContext2D,
+    placements: ReturnType<typeof productionEnvironmentPlacements>,
+    sources: ReadonlyMap<string, CanvasImageSource>,
+  ) {
+    for (const placement of placements) {
+      const asset = FLOOR13_ENVIRONMENT_ASSET_REGISTRY.find(entry => entry.id === placement.asset);
+      const source = sources.get(placement.asset);
+      if (!asset || !source) continue;
+      const displayWidth = placement.displayWidth ?? asset.displayWidth;
+      const displayHeight = placement.displayHeight ?? asset.displayHeight;
+      const worldX = placement.x * this.tileSize + this.tileSize / 2 + (placement.offsetX ?? 0);
+      const worldY = placement.y * this.tileSize + this.tileSize / 2 + (placement.offsetY ?? 0)
+        - (asset.anchor === 'bottom-center' ? displayHeight / 2 : 0);
+      context.save();
+      context.translate(worldX, worldY);
+      if (placement.rotation !== 0) context.rotate(placement.rotation);
+      context.drawImage(source, -displayWidth / 2, -displayHeight / 2, displayWidth, displayHeight);
+      context.restore();
+    }
   }
 
   /** Apply a restrained floor-identity hue to material pixels without changing luminance. */
@@ -3267,6 +3456,11 @@ export class FloorScene extends Phaser.Scene {
       const source = this.getBlock13AssetSource(name);
       if (source) sources.set(name, source);
     }
+    const productionSources = new Map<string, CanvasImageSource>();
+    for (const asset of FLOOR13_ENVIRONMENT_APPROVED_ASSETS) {
+      const source = this.getProductionEnvironmentAssetSource(asset.id as EnvironmentPackAssetId);
+      if (source) productionSources.set(asset.id, source);
+    }
 
     const drawAsset = (name: string, centerX: number, centerY: number, rotation = 0): boolean => {
       const source = sources.get(name);
@@ -3291,7 +3485,9 @@ export class FloorScene extends Phaser.Scene {
       `${this.floorData.start[0]},${this.floorData.start[1]}`,
       `${this.floorData.key[0]},${this.floorData.key[1]}`,
       `${this.floorData.exit[0]},${this.floorData.exit[1]}`,
+      `${this.floorData.puzzleDevice[0]},${this.floorData.puzzleDevice[1]}`,
       ...this.floorData.searchables.map(item => `${item.x},${item.y}`),
+      ...(this.floorData.puzzleFallbackSite ? [`${this.floorData.puzzleFallbackSite[0]},${this.floorData.puzzleFallbackSite[1]}`] : []),
     ]);
     const hub = this.floorData.block13Hub;
 
@@ -3386,6 +3582,27 @@ export class FloorScene extends Phaser.Scene {
         drawAsset(branch.asset, branch.x * this.tileSize + 16, branch.y * this.tileSize + 16, branch.rotation);
       }
     }
+
+    // The nightmare reuses only a few belongings, placed at unsettling angles.
+    // Keep the hub, its branches, thresholds, and interaction sites clear.
+    const protectedDecorationTiles = new Set<string>();
+    for (const key of importantTiles) {
+      const [x, y] = key.split(',').map(Number);
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) protectedDecorationTiles.add(`${x + dx},${y + dy}`);
+    }
+    if (hub) {
+      for (let y = hub[1] - 3; y <= hub[1] + 3; y++) for (let x = hub[0] - 3; x <= hub[0] + 3; x++) protectedDecorationTiles.add(`${x},${y}`);
+      for (const branch of block13BranchPlacements(hub, [this.floorData.start, this.floorData.key, this.floorData.exit])) {
+        protectedDecorationTiles.add(`${branch.x},${branch.y}`);
+      }
+    }
+    for (let y = 0; y < tiles.length; y++) for (let x = 0; x < tiles[y].length; x++) {
+      if (block13OverlayAssetAt(0, x, y, tiles[y][x])) protectedDecorationTiles.add(`${x},${y}`);
+    }
+    const nightmareDecorations = productionEnvironmentPlacements(
+      0, tiles, this.floorData.rooms, this.floorData.doors, protectedDecorationTiles,
+    );
+    this.drawProductionEnvironmentPlacements(context, nightmareDecorations, productionSources);
 
     composed.refresh();
     composed.setFilter(Phaser.Textures.FilterMode.NEAREST);
@@ -4319,6 +4536,67 @@ export class FloorScene extends Phaser.Scene {
     });
   }
 
+  /** Optional lore papers are scene-owned so inspecting them never changes replay state or economy. */
+  private createLorePapers() {
+    const floor = this.authoritativeSimulation.state.floor;
+    const paperAsset = FLOOR13_ENVIRONMENT_ASSET_REGISTRY.find(asset => asset.id === 'scattered_papers');
+    if (!paperAsset || !this.textures.exists(paperAsset.key)) return;
+
+    const blockedTiles = new Set<string>([
+      `${this.floorData.start[0]},${this.floorData.start[1]}`,
+      `${this.floorData.key[0]},${this.floorData.key[1]}`,
+      `${this.floorData.exit[0]},${this.floorData.exit[1]}`,
+      `${this.floorData.puzzleDevice[0]},${this.floorData.puzzleDevice[1]}`,
+      ...(this.floorData.puzzleFallbackSite ? [`${this.floorData.puzzleFallbackSite[0]},${this.floorData.puzzleFallbackSite[1]}`] : []),
+      ...this.floorData.searchables.map(item => `${item.x},${item.y}`),
+      ...this.floorData.doors.map(([x, y]) => `${x},${y}`),
+    ]);
+    const ordinaryDecorations = ordinaryMapDecorationPlacements(floor, this.floorData.tiles, this.floorData.doors, blockedTiles);
+    for (const item of ordinaryDecorations) {
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) blockedTiles.add(`${item.x + dx},${item.y + dy}`);
+    }
+    const ordinaryDecorationTiles = new Set(ordinaryDecorations.map(item => `${item.x},${item.y}`));
+    const productionDecorations = productionEnvironmentPlacements(
+      floor, this.floorData.tiles, this.floorData.rooms, this.floorData.doors, blockedTiles, ordinaryDecorationTiles,
+    );
+    for (const item of productionDecorations) {
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) blockedTiles.add(`${item.x + dx},${item.y + dy}`);
+    }
+
+    for (const placement of lorePaperPlacements(floor, this.floorData.tiles, this.floorData.rooms, blockedTiles)) {
+      const sprite = this.add.image(
+        placement.x * this.tileSize + this.tileSize / 2,
+        placement.y * this.tileSize + this.tileSize / 2,
+        paperAsset.key,
+      ).setDisplaySize(paperAsset.displayWidth, paperAsset.displayHeight).setDepth(2.8);
+      const halo = this.createInteractableHalo(sprite.x, sprite.y, 0xc8b98f, 18)
+        .setStrokeStyle(1, 0xd9c69b, 0.7)
+        .setFillStyle(0xc8b98f, 0.035);
+      this.lorePaperSprites.push({ placement, sprite, halo });
+    }
+  }
+
+  private nearbyLorePaper(state: AuthoritativeState): LorePaperSprite | undefined {
+    if (state.puzzle.active || !this.lorePaperSprites.length) return undefined;
+    const playerX = state.x / FIXED_SCALE;
+    const playerY = state.y / FIXED_SCALE;
+    return this.lorePaperSprites.find(({ sprite }) => {
+      const dx = state.x - Math.round(sprite.x * FIXED_SCALE);
+      const dy = state.y - Math.round(sprite.y * FIXED_SCALE);
+      return dx * dx + dy * dy <= INTERACTION_RANGE_SUBPIXELS * INTERACTION_RANGE_SUBPIXELS
+        && this.hasPresentationLineOfSight(playerX, playerY, sprite.x, sprite.y);
+    });
+  }
+
+  private presentPendingLorePaper() {
+    const noteId = this.pendingLorePaperId;
+    this.pendingLorePaperId = undefined;
+    if (!noteId || this.storyPopupOpen || this.isPaused || this.isTransitioning) return;
+    const note = this.lorePaperSprites.find(item => item.placement.document.id === noteId)?.placement.document;
+    if (!note || note.floor !== this.authoritativeSimulation.state.floor) return;
+    this.showClueModal(note.title, note.content, false);
+  }
+
   /** A visible open-state fallback for missing optional production art. */
   private createOpenContainerFallbackTexture(searchable: Searchable) {
     const key = searchable.objectType === 'maintenance_lockbox'
@@ -4984,6 +5262,8 @@ export class FloorScene extends Phaser.Scene {
     this.hauntingDebugKeyHandler = undefined;
     if (this.block3VisualKeyHandler) this.input.keyboard?.off('keydown', this.block3VisualKeyHandler);
     this.block3VisualKeyHandler = undefined;
+    if (this.developmentHudKeyHandler) this.input.keyboard?.off('keydown', this.developmentHudKeyHandler);
+    this.developmentHudKeyHandler = undefined;
     // Clean up event listeners to prevent memory leaks
     if (this.pauseKey) {
       this.pauseKey.removeAllListeners();
@@ -5048,6 +5328,12 @@ export class FloorScene extends Phaser.Scene {
 
     // Clear searchable sprites
     this.searchableSprites = [];
+    this.lorePaperSprites.forEach(({ sprite, halo }) => {
+      sprite.destroy();
+      halo.destroy();
+    });
+    this.lorePaperSprites = [];
+    this.pendingLorePaperId = undefined;
   }
 }
 

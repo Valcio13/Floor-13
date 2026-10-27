@@ -8,7 +8,7 @@ const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8').rep
 describe('audio settings lifecycle', () => {
   it('provides one shared settings panel from menu and pause, with pause state retained underneath', () => {
     expect(app.match(/<AudioSettingsPanel onClose=/g)).toHaveLength(2);
-    expect(app).toContain('AUDIO SETTINGS');
+    expect(app).toContain('>AUDIO</button>');
     expect(scene).toContain("new Event('block13:open-audio-settings')");
     expect(scene).toContain('this.isPaused = true');
     expect(scene).toContain('this.isPaused = false');
@@ -24,7 +24,10 @@ describe('audio settings lifecycle', () => {
   });
 
   it('keeps sliders, mute toggles, reset, and reduced intensity in the same persisted preference model', () => {
-    for (const label of ['Master Volume', 'SFX Volume', 'Ambience Volume', 'Music Volume']) expect(component).toContain(label);
+    for (const label of ['Master Volume', 'Sound Effects', 'Music']) expect(component).toContain(label);
+    expect(component).toContain('ambienceVolume: value');
+    expect(component).toContain('Music also controls the ambient bed.');
+    expect(component).not.toContain('label: \'Ambience Volume\'');
     expect(component).toContain('publishAudioPreferences(next)');
     expect(component).toContain('AUDIO_PREFERENCES_DEFAULTS');
     expect(component).toContain('Reduce Jumpscare Intensity');

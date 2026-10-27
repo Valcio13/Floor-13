@@ -8,6 +8,37 @@ export interface EnvironmentalLightProfile {
   baseBrightness: number;
 }
 
+/**
+ * The ceiling-lamp art emits toward the bottom of its source image. These
+ * helpers turn that face toward the open tile beside a wall-mounted fixture.
+ * They are presentation-only and do not alter the lamp's omnidirectional
+ * environmental light.
+ */
+export type LampOpenSide = 'down' | 'right' | 'up' | 'left';
+
+const LAMP_OPEN_SIDE_PRIORITY: readonly LampOpenSide[] = ['down', 'right', 'up', 'left'];
+
+export function lampOpenSide(tiles: readonly (readonly boolean[])[], x: number, y: number): LampOpenSide | null {
+  const openSides: Readonly<Record<LampOpenSide, boolean>> = {
+    down: Boolean(tiles[y + 1]?.[x]),
+    right: Boolean(tiles[y]?.[x + 1]),
+    up: Boolean(tiles[y - 1]?.[x]),
+    left: Boolean(tiles[y]?.[x - 1]),
+  };
+  return LAMP_OPEN_SIDE_PRIORITY.find(side => openSides[side]) ?? null;
+}
+
+/** Rotation required to turn the artwork's default downward-facing diffuser toward the open side. */
+export function lampSpriteRotation(side: LampOpenSide | null): number {
+  switch (side) {
+    case 'right': return -Math.PI / 2;
+    case 'up': return Math.PI;
+    case 'left': return Math.PI / 2;
+    case 'down':
+    case null: return 0;
+  }
+}
+
 function hash(seed: number, value: number): number {
   let result = Math.imul((seed ^ 0x9e3779b9) | 0, 0x85ebca6b);
   result = Math.imul(result ^ Math.imul(value | 0, 0xc2b2ae35), 0x27d4eb2d);
@@ -47,7 +78,10 @@ export function environmentalLightBrightness(profile: EnvironmentalLightProfile,
     const burst = noise > 0.965 || (noise > 0.89 && bucket % 11 === 0);
     return burst ? Math.min(0.65, 0.34 + noise * 0.3) : 0;
   }
-  const flutter = Math.sin(profile.phase + safeTick * 0.11) * 0.08 + (noise - 0.5) * 0.22;
-  const blackout = noise < 0.028 ? -0.62 : noise > 0.975 ? 0.16 : 0;
-  return Math.max(0.3, Math.min(1, profile.baseBrightness + flutter + blackout));
+  // Flickering fixtures need a readable contrast swing without becoming a
+  // strobe. Keep the sequence tick/seed-derived, but widen the flutter and
+  // allow brief deeper dips so the light state is visible on the floor too.
+  const flutter = Math.sin(profile.phase + safeTick * 0.11) * 0.16 + (noise - 0.5) * 0.34;
+  const blackout = noise < 0.06 ? -0.72 : noise > 0.96 ? 0.22 : 0;
+  return Math.max(0.18, Math.min(1, profile.baseBrightness + flutter + blackout));
 }

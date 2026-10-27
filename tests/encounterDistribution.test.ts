@@ -48,7 +48,7 @@ describe('versioned rare-enemy roster', () => {
       1: { crawler: 2, watcher: 1, ambusher: 1 },
       2: { crawler: 1, watcher: 0.5, ambusher: 1 },
       3: { crawler: 1, watcher: 0, ambusher: 0.5 },
-      4: { crawler: 0, watcher: 0, ambusher: 0 },
+      4: { crawler: 1, watcher: 0, ambusher: 0 },
     };
     for (const [floor, values] of Object.entries(expected)) for (const [enemy, mean] of Object.entries(values)) {
       expect(Math.abs(averages[Number(floor)][enemy] - mean)).toBeLessThanOrEqual(0.13);
@@ -60,7 +60,8 @@ describe('versioned rare-enemy roster', () => {
     for (let tick = 0; tick < 900; tick++) sim.step({ left: false, right: false, up: false, down: false, flashlight: false, interact: false });
     expect(sim.state.stalker.state).toBe('dormant');
     expect(sim.state.stalker.visible).toBe(false);
-    expect(sim.state.crawlers).toHaveLength(0);
+    expect(sim.state.crawlers).toHaveLength(1);
+    expect(sim.state.crawlers[0].chasing).toBe(false);
     expect(sim.state.watchers).toHaveLength(0);
     expect(sim.state.ambushers).toHaveLength(0);
   });

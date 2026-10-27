@@ -36,4 +36,10 @@ describe('confirmed presentation gameplay fixes', () => {
     expect(scene).toContain('MATCH CONFIRMED  ·  UP / DOWN TO REVISE (UNCONFIRMS)');
     expect(scene).toContain('case \'memory\': return \'MATCH EACH MEMORY TO THE FLOOR IT REMEMBERS\';');
   });
+
+  it('supports WASD notebook navigation alongside the arrow controls', () => {
+    expect(scene).toContain("key === 'a' || key === 'd'");
+    expect(scene).toContain("key === 'w' || key === 's'");
+    expect(scene).toContain('A / D or ← / → FLOOR     W / S or ↑ / ↓ NOTE');
+  });
 });

@@ -17,9 +17,9 @@ describe('Floor Generation', () => {
   });
 
   it('uses the exact 100% loot table and keeps RNG draw count independent of loot outcomes', () => {
-    expect(LOOT_PROBABILITIES).toEqual({ battery: 24, health: 18, collectible: 25, clue: 8, empty: 25 });
+    expect(LOOT_PROBABILITIES).toEqual({ battery: 37, health: 28, collectible: 15, clue: 5, empty: 15 });
     expect(Object.values(LOOT_PROBABILITIES).reduce((sum, value) => sum + value, 0)).toBe(100);
-    expect(LOOT_THRESHOLDS).toEqual({ battery: 24, health: 42, collectible: 67, clue: 75 });
+    expect(LOOT_THRESHOLDS).toEqual({ battery: 37, health: 65, collectible: 80, clue: 85 });
 
     const runWithLootRoll = (roll: number) => {
       let draws = 0;
@@ -33,6 +33,39 @@ describe('Floor Generation', () => {
     const mostlyEmpty = runWithLootRoll(0.99);
     expect(mostlyMimicsOrBattery.floor.searchables).not.toEqual(mostlyEmpty.floor.searchables);
     expect(mostlyMimicsOrBattery.draws).toBe(mostlyEmpty.draws);
+  });
+
+  it('reduces optional containers by about one third while retaining required evidence and resource availability', () => {
+    let retainedOptionalContainers = 0;
+    let expectedPreviousContainers = 0;
+    let retainedResources = 0;
+    for (const seed of [11, 37, 81, 133, 289, 521, 997, 0xabcde123]) {
+      for (const floorNumber of [4, 3, 2, 1, 0]) {
+        const floor = generateFloor(seed, floorNumber);
+        const objectiveIndices = new Set(floor.objectives.searchableIndices);
+        const optional = floor.searchables.filter((item, index) =>
+          !objectiveIndices.has(index) && item.objectType !== 'maintenance_lockbox');
+        for (let first = 0; first < optional.length; first++) for (let second = first + 1; second < optional.length; second++) {
+          const distance = Math.abs(optional[first].x - optional[second].x) + Math.abs(optional[first].y - optional[second].y);
+          expect(distance, `optional containers clustered on seed ${seed}, floor ${floorNumber}`).toBeGreaterThanOrEqual(3);
+        }
+        const minimumRoomContainers = floor.rooms.length - 1;
+        expect(optional.length).toBeGreaterThanOrEqual(minimumRoomContainers);
+        expect(optional.length).toBeLessThanOrEqual(minimumRoomContainers + 3);
+        expect(floor.objectives.searchableIndices).toHaveLength(floor.objectives.clues.length);
+        expect(floor.searchables.some(item => item.objectType === 'maintenance_lockbox')).toBe(floorNumber === 4);
+        retainedOptionalContainers += optional.length;
+        expectedPreviousContainers += minimumRoomContainers * 1.5;
+        retainedResources += optional.filter(item => item.result.type === 'battery' || item.result.type === 'health').length;
+      }
+    }
+    const reduction = 1 - retainedOptionalContainers / expectedPreviousContainers;
+    expect(reduction).toBeGreaterThanOrEqual(0.28);
+    expect(reduction).toBeLessThanOrEqual(0.38);
+    // The previous supply was 42% of 1.5 containers per room; the new table
+    // preserves it at approximately 65% of one retained container.
+    expect(1.5 * 0.42).toBeCloseTo(1 * 0.65, 1);
+    expect(retainedResources / retainedOptionalContainers).toBeGreaterThan(0.58);
   });
 
   it('ensures start, key, and exit are walkable', () => {

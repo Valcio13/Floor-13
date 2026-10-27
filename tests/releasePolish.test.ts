@@ -39,9 +39,13 @@ describe('release narrative and presentation polish', () => {
     expect(readFileSync(new URL('../docs/credits/CREDITS.md', import.meta.url), 'utf8')).toContain('Scary Halloween');
   });
 
-  it('lets the Hemi run menu select either supported network', () => {
-    expect(app).toContain("setSelectedNetwork('testnet')");
-    expect(app).toContain("setSelectedNetwork('mainnet')");
+  it('uses the configured Hemi network without exposing a network selector', () => {
+    expect(app).not.toContain("setSelectedNetwork('testnet')");
+    expect(app).not.toContain("setSelectedNetwork('mainnet')");
+    expect(app).not.toContain('Available Hemi networks');
+    expect(app).not.toContain('PRIMARY RUN');
+    expect(app).not.toContain('DEVELOPMENT / PRACTICE');
+    expect(app).toContain('SWITCH TO HEMI NETWORK');
     expect(app).toContain('useStartRun(selectedNetwork)');
     expect(app).toContain('useCompleteRun(selectedNetwork)');
   });

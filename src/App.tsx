@@ -11,7 +11,7 @@ import { useCompleteRun } from './web3/hooks';
 import { submitRunCompletion } from './web3/tx2Completion';
 import type { Hash } from 'viem';
 import { wagmiConfig } from './web3/wagmi';
-import { hemiNetwork, type HemiNetworkName, networkDisplayName } from './web3/config';
+import { hemiNetwork, type HemiNetworkName } from './web3/config';
 import type { RunState } from './core/run';
 import { RUN_RECOVERY_STORAGE_KEY, createRunCheckpoint, hashAuthoritativeState, parseRunCheckpoint, serializeRunCheckpoint, validateRunRecovery, type ValidatedRunRecovery } from './core/runRecovery';
 import { InputRecorder, InputReplayer } from './core/inputRecorder';
@@ -21,6 +21,7 @@ import { keccak256, toHex } from 'viem';
 import { tx2SubmissionBlockReason } from './web3/transactionRecovery';
 import { onchainStartupCopy, resultHandoffReady, runMenuActions, startupErrorCopy, terminalSubmissionStatus } from './game/contestUx';
 import { AudioSettingsPanel } from './components/AudioSettingsPanel';
+import { HowToPlayPanel } from './components/HowToPlayPanel';
 import { ConfirmedRunCountdownGate, countdownLabel, emptyRunPreparationStages, updateRunPreparationStage, type RunPreparationStageId, type RunPreparationStages, type RunPreparationStageStatus } from './game/runPreparation';
 import { RunPreparationToasts } from './components/RunPreparationToasts';
 
@@ -60,7 +61,8 @@ function GameApp() {
   const [completionError, setCompletionError] = useState<string | null>(null);
   const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
   const [creditsOpen, setCreditsOpen] = useState(false);
-  const [selectedNetwork, setSelectedNetwork] = useState<HemiNetworkName>(hemiNetwork.name);
+  const [howToPlayOpen, setHowToPlayOpen] = useState(false);
+  const selectedNetwork: HemiNetworkName = hemiNetwork.name;
   const [recovery, setRecovery] = useState<ValidatedRunRecovery | null>(null);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [transactionPending, setTransactionPending] = useState<string | null>(null);
@@ -79,6 +81,22 @@ function GameApp() {
   const { startRun, error: startError } = useStartRun(selectedNetwork);
   const { completeRun } = useCompleteRun(selectedNetwork);
   const closeAudioSettings = useCallback(() => setAudioSettingsOpen(false), []);
+  const openAudioSettings = useCallback(() => {
+    setHowToPlayOpen(false);
+    setCreditsOpen(false);
+    setAudioSettingsOpen(true);
+  }, []);
+  const openCredits = useCallback(() => {
+    setHowToPlayOpen(false);
+    setAudioSettingsOpen(false);
+    setCreditsOpen(true);
+  }, []);
+  const openHowToPlay = useCallback(() => {
+    setAudioSettingsOpen(false);
+    setCreditsOpen(false);
+    setHowToPlayOpen(true);
+  }, []);
+  const closeHowToPlay = useCallback(() => setHowToPlayOpen(false), []);
   const markPreparationStage = (stage: RunPreparationStageId, stageStatus: RunPreparationStageStatus) => {
     setPreparationStages(current => updateRunPreparationStage(current, stage, stageStatus));
     activePreparationStageRef.current = stageStatus === 'active' ? stage : activePreparationStageRef.current === stage ? null : activePreparationStageRef.current;
@@ -98,10 +116,10 @@ function GameApp() {
   }, [status, countdown]);
 
   useEffect(() => {
-    const open = () => setAudioSettingsOpen(true);
+    const open = () => openAudioSettings();
     window.addEventListener(OPEN_AUDIO_SETTINGS_EVENT, open);
     return () => window.removeEventListener(OPEN_AUDIO_SETTINGS_EVENT, open);
-  }, []);
+  }, [openAudioSettings]);
 
   const resetCompletionState = () => {
     setCompletionData(null);
@@ -458,7 +476,7 @@ function GameApp() {
     
     return (
       <main className="app-shell result-shell">
-        <section className="title-card result-card">
+        <section className={`title-card result-card ${runState?.status === 'won' ? 'is-won' : 'is-run-over'}`}>
           <p className="eyebrow">RUN REPORT // HEMI ARCADE</p>
           <h1>{runState?.status === 'won' ? 'RUN COMPLETE!' : 'RUN OVER'}</h1>
           {runState?.status === 'won' && <p className="premise">You escaped the building. The record remains.</p>}
@@ -473,17 +491,24 @@ function GameApp() {
           )}
           {isBlockchainRun && runState?.manifest && (
             <div className="result-chain-card">
-              <p>Run ID: {runState.manifest.runId.toString()}</p>
-              <p>Records this run’s result and replay commitment on Hemi.</p>
+              <div className="result-chain-heading">
+                <p className="result-chain-title">HEMI RUN RECORD</p>
+                <p className="result-run-id">RUN ID <strong>{runState.manifest.runId.toString()}</strong></p>
+              </div>
+              <p className="result-chain-description">{completionPhase === 'confirmed'
+                ? 'This result and replay commitment are recorded on Hemi.'
+                : completionPhase === 'submitted'
+                  ? 'Your result submission is awaiting confirmation on Hemi.'
+                  : 'Submit this result and replay commitment to Hemi.'}</p>
               {completionPhase === 'confirmed' ? (
                 <>
-                  <p>CONFIRMED</p>
-                  <p>Transaction: {completionHash ? `${completionHash.slice(0, 10)}…${completionHash.slice(-8)}` : 'Confirmed'}</p>
+                  <p className="result-chain-state is-confirmed">CONFIRMED</p>
+                  <p className="result-transaction">TRANSACTION <span>{completionHash ? `${completionHash.slice(0, 10)}…${completionHash.slice(-8)}` : 'Confirmed'}</span></p>
                 </>
               ) : (
                 <>
-                  <p>{completionStatus.label}{completionPhase === 'submitted' && completionHash ? ` ${completionHash.slice(0, 10)}…${completionHash.slice(-8)}` : ''}</p>
-                  {completionError && <p role="alert">{completionError}</p>}
+                  <p className={`result-chain-state ${completionPhase === 'failed' ? 'is-failed' : ''}`}>{completionStatus.label}{completionPhase === 'submitted' && completionHash ? ` ${completionHash.slice(0, 10)}…${completionHash.slice(-8)}` : ''}</p>
+                  {completionError && <p role="alert" className="result-chain-error">{completionError}</p>}
                   <button onClick={submitCompletion} disabled={completionStatus.disabled || !!transactionPending || !!localStorage.getItem(TX2_PENDING_KEY)}>{completionStatus.button}</button>
                 </>
               )}
@@ -510,12 +535,11 @@ function GameApp() {
     status === 'starting' || isConnecting || isSwitching,
     false,
   );
-  const selectedHemiLabel = networkDisplayName(selectedNetwork);
   const hemiLabel = status === 'starting' && startPhase !== 'idle'
     ? onchainStartupCopy(startPhase as Exclude<MenuStartPhase, 'idle'>)
     : menuActions.hemi === 'busy' ? isConnecting ? 'CONNECTING WALLET…' : isSwitching ? 'SWITCHING TO HEMI…' : 'STARTING HEMI RUN…'
         : menuActions.hemi === 'connect' ? 'CONNECT WALLET FOR HEMI'
-        : menuActions.hemi === 'switch-network' ? `SWITCH TO HEMI ${selectedHemiLabel}` : 'PLAY ON HEMI';
+        : menuActions.hemi === 'switch-network' ? 'SWITCH TO HEMI NETWORK' : 'PLAY ON HEMI';
 
   return (
     <main className="app-shell menu-shell">
@@ -530,56 +554,55 @@ function GameApp() {
 
         <div className="run-choices" aria-label="Choose how to play">
           <section className="run-choice run-choice-primary">
-            <p className="choice-kicker">PRIMARY RUN</p>
             <button type="button" aria-live="polite" onClick={beginRun} disabled={menuActions.hemi === 'busy' || !!transactionPending}>{hemiLabel}</button>
-            <p>Create a verifiable run on Hemi, then record the result and replay commitment after the run.</p>
-            {isConnected && <p className={`network-state ${isCorrectNetwork ? 'is-ready' : 'is-warning'}`}>{isCorrectNetwork ? `● HEMI ${selectedHemiLabel} READY` : `● SWITCH TO HEMI ${selectedHemiLabel} TO CONTINUE`}</p>}
-            <div className="network-options" aria-label="Available Hemi networks">
-              <button type="button" className={`network-option ${selectedNetwork === 'testnet' ? 'is-active' : ''}`} onClick={() => setSelectedNetwork('testnet')}> {selectedNetwork === 'testnet' ? '●' : '○'} HEMI TESTNET</button>
-              <button type="button" className={`network-option ${selectedNetwork === 'mainnet' ? 'is-active' : ''}`} onClick={() => setSelectedNetwork('mainnet')}> {selectedNetwork === 'mainnet' ? '●' : '○'} HEMI MAINNET</button>
-            </div>
+            <p>Record a verifiable run on Hemi and commit the result after you escape.</p>
+            {isConnected && <p className={`network-state ${isCorrectNetwork ? 'is-ready' : 'is-warning'}`}>{isCorrectNetwork ? '● HEMI READY' : '● SWITCH TO THE CONFIGURED HEMI NETWORK TO CONTINUE'}</p>}
           </section>
           <section className="run-choice run-choice-secondary">
-            <p className="choice-kicker">DEVELOPMENT / PRACTICE</p>
             <button type="button" className="local-run-button" onClick={beginLocalRun} disabled={!menuActions.localEnabled}>PLAY LOCAL</button>
-            <p>Play immediately without wallet or transaction requirements.</p>
+            <p>Play immediately with no wallet or transaction requirements.</p>
           </section>
         </div>
 
-        <button type="button" className="menu-settings-button" onClick={() => setAudioSettingsOpen(true)}>AUDIO SETTINGS</button>
-        <button type="button" className="menu-credits-button" onClick={() => setCreditsOpen(true)}>CREDITS &amp; ATTRIBUTION</button>
+        <nav className="menu-secondary-actions" aria-label="Menu information and settings">
+          <button type="button" className="menu-how-to-play-button" onClick={openHowToPlay}>HOW TO PLAY</button>
+          <button type="button" className="menu-settings-button" onClick={openAudioSettings}>AUDIO</button>
+          <button type="button" className="menu-credits-button" onClick={openCredits}>CREDITS</button>
+        </nav>
 
-        {recoveryError && <div role="alert" className="menu-error">
-          <p>Saved run recovery stopped safely: {recoveryError}</p>
-          <button type="button" onClick={() => { localStorage.removeItem(RUN_RECOVERY_STORAGE_KEY); sessionStorage.removeItem('activeRun'); setRecoveryError(null); }}>Discard the unrecoverable saved run</button>
-        </div>}
-        {transactionPending && <div role="alert" className="menu-error">
-          <p>{transactionPending}</p>
-          <button type="button" onClick={() => {
-            localStorage.removeItem(TX1_PENDING_KEY);
-            localStorage.removeItem(TX2_PENDING_KEY);
-            setTransactionPending(null);
-          }}>I checked the explorer; clear unresolved transaction marker</button>
-        </div>}
-        {persistenceError && <p role="alert" className="menu-error">Run recovery checkpoint could not be saved: {persistenceError}</p>}
-
-        {isConnected && <p className="run-rule connected-wallet">Connected: {address?.slice(0, 6)}…{address?.slice(-4)}</p>}
-        {(error || startError || connectError || switchError) && (
-          <p className="menu-error" role="alert">{error || (startError ? startupErrorCopy(startError) : null) || (connectError ? startupErrorCopy(connectError) : null) || (switchError ? startupErrorCopy(switchError) : null)}</p>
-        )}
+        <div className="menu-notices" aria-live="polite">
+          {recoveryError && <div role="alert" className="menu-error">
+            <p>Saved run recovery needs attention: {recoveryError}</p>
+            <button type="button" onClick={() => { localStorage.removeItem(RUN_RECOVERY_STORAGE_KEY); sessionStorage.removeItem('activeRun'); setRecoveryError(null); }}>Discard saved run</button>
+          </div>}
+          {transactionPending && <div role="alert" className="menu-error">
+            <p>{transactionPending}</p>
+            <button type="button" onClick={() => {
+              localStorage.removeItem(TX1_PENDING_KEY);
+              localStorage.removeItem(TX2_PENDING_KEY);
+              setTransactionPending(null);
+            }}>Clear unresolved transaction marker</button>
+          </div>}
+          {persistenceError && <p role="alert" className="menu-error">Saved run checkpoint failed: {persistenceError}</p>}
+          {isConnected && <p className="run-rule connected-wallet">Connected: {address?.slice(0, 6)}…{address?.slice(-4)}</p>}
+          {(error || startError || connectError || switchError) && (
+            <p className="menu-error" role="alert">{error || (startError ? startupErrorCopy(startError) : null) || (connectError ? startupErrorCopy(connectError) : null) || (switchError ? startupErrorCopy(switchError) : null)}</p>
+          )}
+          {isConnected && !isCorrectNetwork && <p className="network-note">Play Local is ready now. Hemi runs use the configured Hemi network.</p>}
+        </div>
         {status === 'starting' && startPhase !== 'idle' && <span className="sr-only" role="status">{onchainStartupCopy(startPhase as Exclude<MenuStartPhase, 'idle'>)}</span>}
-        {isConnected && !isCorrectNetwork && <p className="network-note">PLAY LOCAL is ready now. Hemi runs require Hemi {selectedHemiLabel}.</p>}
       </section>
       {audioSettingsOpen && <AudioSettingsPanel onClose={closeAudioSettings} />}
+      {howToPlayOpen && <HowToPlayPanel onClose={closeHowToPlay} />}
       {creditsOpen && (
-        <div className="credits-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setCreditsOpen(false); }}>
+        <div className="credits-backdrop" role="presentation" onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setCreditsOpen(false); } }} onMouseDown={event => { if (event.target === event.currentTarget) setCreditsOpen(false); }}>
           <section className="credits-panel" role="dialog" aria-modal="true" aria-labelledby="credits-title">
             <header className="credits-header">
               <div>
                 <p className="credits-eyebrow">FLOOR 13 // PRODUCTION NOTES</p>
                 <h2 id="credits-title">CREDITS &amp; ATTRIBUTION</h2>
               </div>
-              <button type="button" className="credits-close" onClick={() => setCreditsOpen(false)} aria-label="Close credits">CLOSE</button>
+              <button autoFocus type="button" className="credits-close" onClick={() => setCreditsOpen(false)} aria-label="Close credits">CLOSE</button>
             </header>
             <div className="credits-body">
               <h3>FLOOR 13</h3>

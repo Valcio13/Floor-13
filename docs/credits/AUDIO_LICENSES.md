@@ -31,4 +31,4 @@ For Freesound-syndicated items, Pixabay shows the source title and creator attri
 - Stalker hunt: a trimmed section of the chase-grunt recording.
 - Jumpscare: a restrained 2.3-second cut of the impact, faded and normalized.
 
-The downloadable source MP3s remain outside the repository. Only the processed game cues listed above are included.
+The processed OGG cues are the runtime audio distributed with the game. Source MP3s are not required by the game. `SRG774_Airy.mp3` is documented as CC0 and has a redistribution basis. `music_scary_halloween_617002.mp3` is excluded from Git while its local copy is preserved because the Pixabay license prohibits standalone distribution of substantially unmodified content. The source MP3s `alesiadavina_demonic_guttural_growl_543180.mp3` and `freeeverythingxx_woman_scream_268488.mp3` are also local-only and ignored by Git. The processed runtime OGG cues are edited and integrated in the game under the documented Pixabay Content License; the source pages permit this integrated use, with attribution optional.

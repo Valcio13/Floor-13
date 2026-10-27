@@ -4,6 +4,7 @@ import type { RunState } from '../../core/run';
 import { BLOCK13_ASSET_MANIFEST } from '../block13Assets';
 import { PLAYER_ASSET_MANIFEST, PLAYER_WALK_ASSET_MANIFEST } from '../playerAssets';
 import { ORDINARY_ENVIRONMENT_ASSET_MANIFEST } from '../environmentAssets';
+import { FLOOR13_ENVIRONMENT_APPROVED_ASSETS } from '../productionEnvironment';
 import { STALKER_IDLE_ASSET_MANIFEST, STALKER_WALK_ASSET_MANIFEST } from '../stalkerAssets';
 import { AMBUSHER_JUMPSCARE_VARIANT_ASSETS, CONTAINER_SCARE_VARIANT_ASSETS, ENEMY_ASSET_MANIFEST, LAMP_JUMPSCARE_VARIANT_ASSETS } from '../enemyAssets';
 import { NARRATIVE_ASSET_MANIFEST } from '../narrativeAssets';
@@ -66,6 +67,9 @@ export class BootScene extends Phaser.Scene {
 
   private loadOrdinaryEnvironmentAssets() {
     for (const asset of Object.values(ORDINARY_ENVIRONMENT_ASSET_MANIFEST)) {
+      this.load.image(asset.key, asset.path);
+    }
+    for (const asset of FLOOR13_ENVIRONMENT_APPROVED_ASSETS) {
       this.load.image(asset.key, asset.path);
     }
   }

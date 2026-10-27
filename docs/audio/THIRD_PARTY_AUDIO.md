@@ -1,9 +1,16 @@
 # Block 13 audio provenance
 
 The original source files used for the current production encodes are retained
-in `docs/audio/sources/`. The Ambusher production WAV master is retained in
+under `docs/audio/sources/`. The Ambusher production WAV master is retained in
 `docs/audio/masters/`; only the OGG files under `public/assets/audio/` are
-loaded by the game. No source archives are included in the production assets.
+loaded by the game. Source MP3s are not runtime dependencies. The CC0
+`SRG774_Airy.mp3` has a documented redistribution basis. The Pixabay original
+`music_scary_halloween_617002.mp3` is removed from Git tracking; its local copy
+is preserved and ignored because the Pixabay license prohibits standalone
+distribution of substantially unmodified content. Keep the two 2026-10-27
+Pixabay source MP3s local-only and ignored for the same reason. The processed
+runtime OGG cues are edited and integrated in-game under the documented
+content license; credits and source pages are recorded below.
 
 All listed sources are marked CC0 on their original OpenGameArt pages. CC0
 permits reuse without attribution; this record is kept for project provenance.
@@ -43,12 +50,21 @@ boundaries do not establish that any track sounds good in context.
 
 | Source | Creator | Original source | License | Modifications |
 | --- | --- | --- | --- | --- |
-| *Scary Halloween* | Dmitrii Spis (NastelBom) | https://pixabay.com/music/scary-childrens-tunes-scary-halloween-617002/ | Pixabay Content License; attribution optional | Downloaded directly from Pixabay on 2026-10-17, encoded to OGG Vorbis quality 6 for runtime use. The source is 75.65 seconds and measures approximately -8.3 LUFS integrated; the runtime gain trim is 0.22. |
+| *Scary Halloween* | Dmitrii Spis (NastelBom) | https://pixabay.com/music/scary-childrens-tunes-scary-halloween-617002/ | Pixabay Content License; attribution optional | Downloaded directly from Pixabay on 2026-10-17, encoded to OGG Vorbis quality 6 for runtime use. The source is 75.65 seconds and measures approximately -8.3 LUFS integrated. Runtime per-track gain is 0.165 on Floors 1–4 and 0.05775 on Floor 13, before Master and Music settings are applied. |
 
-The source MP3 is retained as `docs/audio/sources/music_scary_halloween_617002.mp3`.
+The source MP3 has a local copy at `docs/audio/sources/music_scary_halloween_617002.mp3`; it is ignored by Git and is not part of the public repository.
 The runtime file is `public/assets/audio/music/music_scary_halloween_617002.ogg`.
 The track is registered with YouTube Content ID; the Pixabay download page
 provides a license certificate if a platform claim needs to be disputed.
+
+## Occasional haunting vocalizations
+
+| Source | Creator | Original source | License | Modifications |
+| --- | --- | --- | --- | --- |
+| *Demonic Guttural Growl Beast Breathing Horror SFX* | AlesiaDavina | https://pixabay.com/sound-effects/film-special-effects-demonic-guttural-growl-beast-breathing-horror-sfx-543180/ | Pixabay Content License; attribution optional | Downloaded from the linked Pixabay page on 2026-10-27. A local-only source MP3 copy is ignored by Git; the production cue uses the opening 3.25 seconds with short anti-click fades, resampled to 48 kHz mono and encoded as OGG Vorbis quality 5. Runtime gain is 0.16 before Master and SFX settings. |
+| *Woman Scream in Horror* | FreeEverythingxx | https://pixabay.com/sound-effects/horror-woman-scream-in-horror-268488/ | Pixabay Content License; attribution optional | The Pixabay listing identifies this as AI-generated. Downloaded on 2026-10-27; its local-only source MP3 copy is ignored by Git. The production cue uses a 2.60-second crop beginning at 0.40 seconds, with a 40 ms fade-in and 400 ms fade-out, resampled to 48 kHz mono and encoded as OGG Vorbis quality 5. Runtime gain is 0.12 before Master and SFX settings, reduced by a further 44% when Reduced Jumpscare Intensity is enabled. |
+
+These one-shots are attached to existing deterministic whisper presentation events on Floors 1 and 13. A stable selection from the event ID uses the scream for one in four whisper cues and the growl for the rest; it consumes no gameplay RNG. Both remain bounded by the existing pacing and presentation gates and have an 18-second audio cooldown. They do not create new events or affect simulation state. Both linked Pixabay pages identify their assets as free for use under the [Pixabay Content License](https://pixabay.com/service/license-summary/).
 
 ## Original enemy cues (2026-10-12)
 

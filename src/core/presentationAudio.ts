@@ -11,6 +11,22 @@ export type AudioCue = {
 
 const cue = (key: string, cooldownMs = 0, positional?: { x: number; y: number }, volume?: number): AudioCue => ({ key, cooldownMs, positional, volume });
 
+/** Rare whisper-event vocalizations; presentation only and routed through SFX settings. */
+export const HAUNTING_GROWL_VOLUME = 0.16;
+export const HAUNTING_SCREAM_VOLUME = 0.12;
+export const HAUNTING_GROWL_COOLDOWN_MS = 18_000;
+export const HAUNTING_SCREAM_COOLDOWN_MS = 18_000;
+export function hauntingWhisperAudioCue(eventId: number): AudioCue {
+  // Stable cosmetic selection from the existing event identity; does not consume gameplay RNG.
+  let selector = Math.trunc(eventId) | 0;
+  selector = Math.imul(selector ^ (selector >>> 16), 0x7feb352d);
+  selector = Math.imul(selector ^ (selector >>> 15), 0x846ca68b);
+  selector ^= selector >>> 16;
+  return selector % 4 === 0
+    ? cue('sfx_haunting_scream', HAUNTING_SCREAM_COOLDOWN_MS, undefined, HAUNTING_SCREAM_VOLUME)
+    : cue('sfx_haunting_growl', HAUNTING_GROWL_COOLDOWN_MS, undefined, HAUNTING_GROWL_VOLUME);
+}
+
 /** Dedicated impact gains through AudioDirector, preserving master and SFX settings. */
 export const AMBUSHER_IMPACT_PRODUCTION_VOLUME = 0.48;
 export const AMBUSHER_IMPACT_FALLBACK_VOLUME = 0.82;
@@ -117,11 +133,18 @@ export interface FloorMusicTrack {
   gain: number;
 }
 
+/** One per-track trim; category sliders, master volume, and ambience routing remain unchanged. */
+export const DEFAULT_MUSIC_TRACK_GAIN = 0.165;
+/** Block 13 retains its existing 35% trim on top of the new global music trim. */
+export const BLOCK13_DEFAULT_MUSIC_GAIN = 0.05775;
+
 /** One restrained music bed is used across every playable floor. */
 export function floorMusicTrack(floor: number): FloorMusicTrack | undefined {
-  return floor >= 0 && floor <= 4 ? { key: 'music_scary_halloween', gain: 0.22 } : undefined;
+  return floor >= 0 && floor <= 4
+    ? { key: 'music_scary_halloween', gain: floor === 0 ? BLOCK13_DEFAULT_MUSIC_GAIN : DEFAULT_MUSIC_TRACK_GAIN }
+    : undefined;
 }
 
 export const FLOOR_MUSIC_PREVIEW: readonly FloorMusicTrack[] = [
-  { key: 'music_scary_halloween', gain: 0.22 },
+  { key: 'music_scary_halloween', gain: DEFAULT_MUSIC_TRACK_GAIN },
 ];

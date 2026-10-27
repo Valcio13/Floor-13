@@ -1,7 +1,26 @@
-# Hemi Mainnet Deployment Preparation
+# Hemi Mainnet Configuration and Deployment Record
 
-This document records the Floor 13 RunRegistry Hemi Mainnet preparation. It
-does not deploy contracts or broadcast transactions.
+This document records the configured Floor 13 RunRegistry Mainnet address and
+the steps needed for an independently verified release. This document does
+not deploy contracts or broadcast transactions.
+
+## Current status (2026-10-27)
+
+- `src/web3/config.ts` selects Hemi Mainnet chain ID `43111` when
+  `VITE_HEMI_NETWORK=mainnet`; it reads the address from
+  `VITE_HEMI_MAINNET_CONTRACT_ADDRESS` and does not fall back to Testnet.
+- The configured address is `0x88b7Ac78c7964a2CbcFC8EC8e7bc9F8d39A3B059`.
+  A read-only `eth_getCode` request to the Hemi Mainnet RPC returned non-empty
+  bytecode at this address. This confirms deployed code is present, not that
+  its source matches this checkout or that explorer source verification is
+  complete.
+- The returned bytecode metadata indicates Solidity `0.8.34`; the user's
+  verification-page screenshot also showed `0.8.34+commit.80d5c536`. This
+  repository's `foundry.toml` currently pins `0.8.24`. Resolve that compiler
+  mismatch against the actual deployment record before source verification.
+- The deployment transaction hash, deployer, timestamp, optimizer settings,
+  and explorer verification status are not confirmed in this repository.
+- No deployment or wallet transaction was performed for this audit.
 
 ## Network targets
 
@@ -15,20 +34,22 @@ the Foundry RPC aliases. The selected frontend network is controlled by
 `VITE_HEMI_NETWORK=testnet|mainnet`. A mainnet build fails if its contract
 address is missing; it never falls back to the testnet address.
 
-## Pre-deployment checklist
+## Release verification checklist
 
-- [ ] Decide and document that RunRegistry stores player-submitted TX1/TX2
+- [x] Document that RunRegistry stores player-submitted TX1/TX2
       commitments; it does not independently verify gameplay.
 - [ ] Resolve the release checklist blockers and review current dependency
       advisories.
-- [ ] Install Foundry and confirm the pinned Solidity compiler is available.
-- [ ] Run `forge build` and `forge test`.
+- [ ] Confirm the exact compiler, optimizer settings, and verified source for
+      the already deployed contract. Do not infer them from local settings.
+- [ ] Install Foundry and confirm the pinned Solidity compiler is available
+      before any future contract compilation.
+- [ ] Run `forge build` and `forge test` if contract sources change.
 - [ ] Confirm the exact game version and rules hash in the release commit.
-- [ ] Use a dedicated deployment wallet funded only with the required Hemi ETH.
 - [ ] Set `EXPECTED_CHAIN_ID=43111` and `VITE_HEMI_NETWORK=mainnet` only for
       the mainnet release environment.
-- [ ] Confirm the supplied mainnet address and explorer verification before
-      publishing the production build.
+- [ ] Confirm source verification and a live wallet flow before claiming
+      either is complete.
 
 ## Compile and test
 
@@ -82,15 +103,18 @@ contract: RunRegistry
 contractAddress: "0x88b7Ac78c7964a2CbcFC8EC8e7bc9F8d39A3B059"
 deploymentTransactionHash: ""
 deployerAddress: ""
-compilerVersion: "0.8.24"
-optimizer: "not enabled unless explicitly configured"
+deployedCompilerVersion: "unconfirmed; bytecode metadata indicates 0.8.34"
+localFoundryCompilerVersion: "0.8.24"
+optimizer: "unconfirmed for deployed bytecode"
 bytecodeHash: ""
 verificationUrl: ""
 deploymentTimestamp: ""
 ```
 
-Empty fields are intentional until the deployment exists. Do not fabricate
-addresses, transaction hashes, timestamps, gas costs, or verification URLs.
+Empty and unconfirmed fields are intentional. Do not fabricate addresses,
+transaction hashes, timestamps, gas costs, compiler settings, or verification
+URLs. The address has bytecode, but the deployment record and explorer source
+verification remain incomplete.
 
 ## Explorer verification
 

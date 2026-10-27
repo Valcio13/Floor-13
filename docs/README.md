@@ -5,6 +5,9 @@ This index separates current operational guidance from historical design notes a
 ## Play and understand the game
 
 - [Puzzle guide](puzzle-guide.md) — controls, clue handling, fallback routes, and floor objectives.
+- [Floor transition text inventory](FLOOR_TRANSITIONS.md) — current opening, transitions, and finale presentation text.
+- [Environment asset integration](ENVIRONMENT_ASSET_INTEGRATION.md) — approved environment assets and deterministic placement constraints.
+- [Audio audit](AUDIO_AUDIT.md) — runtime inventory of loaded cues and missing optional audio.
 - [Gameplay design](game-design.md) — historical design context; the README and source are authoritative for current behavior.
 - [Playtest workflow](playtest.md) — development-only reproduction helpers and manual checks.
 - [Investigation UX](investigation-ux.md) — notebook and evidence presentation notes.
@@ -22,7 +25,7 @@ This index separates current operational guidance from historical design notes a
 ## Hemi and release operations
 
 - [Hemi Mainnet deployment preparation](hemi/MAINNET_DEPLOYMENT.md)
-- [Historical Hemi integration report](hemi/HEMI_INTEGRATION.md)
+- [Historical Hemi integration report](hemi/HEMI_INTEGRATION.md) — archived MVP behavior; not current setup instructions.
 - [Release checklist](release/RELEASE_CHECKLIST.md)
 - [Web3 audit](audits/WEB3_AUDIT_REPORT.md) — historical findings; do not treat it as current deployment status.
 
@@ -39,4 +42,4 @@ Legal notices and attribution are grouped under [docs/credits](credits/): [CREDI
 
 ## Protocol and replay
 
-The protocol specifications are grouped under [docs/specs](specs/). The current game commits player-submitted run and replay hashes; it does not include an independent gameplay verifier.
+The protocol specifications are grouped under [docs/specs](specs/). The current game commits player-submitted run and replay hashes; it does not include an independent gameplay verifier. The software MIT license does not cover bundled media; see the [asset credits](credits/ASSET_CREDITS.md) and [visual provenance inventory](visual-asset-provenance.md) for unresolved redistribution status.

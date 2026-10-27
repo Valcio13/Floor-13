@@ -23,19 +23,26 @@ record:
 - Victory background: `src/game/narrativeAssets.ts`
 
 The exhaustive file-by-file status is in
-[`docs/visual-asset-provenance.md`](docs/visual-asset-provenance.md). It
+[`visual-asset-provenance.md`](../visual-asset-provenance.md). It
 includes every PNG under `public/assets`, including runtime purpose, manifest
 evidence, creator/source status, license/attribution status, and redistribution
-status. Every supplied visual bundle remains unresolved until the rights-holder
-and public release permission are documented. Existing bundled images are
-retained in the working tree pending that decision.
+status. All 145 AI-generated images, including the separate 50-image
+environment pack and the 89 images whose generator was previously unspecified,
+are confirmed by the project owner as generated with ChatGPT. They are recorded
+as project-specific output under the applicable OpenAI terms, not downloaded
+stock art.
 
-The current repository does not establish whether the art is original,
-generated, edited from third-party material, or based on external references.
-No names, source files, generation records, reference list, transfer records,
-or explicit license grant for these visual bundles were found. This remains a
-public-release blocker. Do not infer that they are MIT-licensed from the code
-license.
+The inventory distinguishes 145 ChatGPT-generated images (56 already recorded
+as ChatGPT-generated plus 89 now owner-confirmed) and 20 locally created
+environment images. The project grants the MIT License to project-owned
+artwork, including these generated images and local script art, to the extent
+the project holds those rights and no third-party restrictions apply. OpenAI's
+Terms of Use assign output ownership to the user as between the parties, to the
+extent permitted by law; they do not guarantee uniqueness or resolve input
+rights. The container sprite README now reflects the owner's ChatGPT
+confirmation. No file is affirmatively identified as third-party stock. Other
+third-party media, including audio, remain under their separate documented
+licenses and attribution terms; the artwork MIT grant does not cover them.
 
 ## Production audio
 

@@ -61,11 +61,13 @@ export interface FloorLootRng {
 /** Canonical ordinary loot probabilities in percentage points. These
  * cumulative boundaries total exactly 100 and are intentionally explicit. */
 export const LOOT_PROBABILITIES = {
-  battery: 24,
-  health: 18,
-  collectible: 25,
-  clue: 8,
-  empty: 25,
+  // About one third fewer optional containers are placed. These thresholds
+  // preserve the prior expected battery/health supply across generated rooms.
+  battery: 37,
+  health: 28,
+  collectible: 15,
+  clue: 5,
+  empty: 15,
 } as const;
 export const LOOT_THRESHOLDS = {
   battery: LOOT_PROBABILITIES.battery,
@@ -98,6 +100,12 @@ function searchableClusterAllowed(x: number, y: number, occupied: ReadonlySet<st
       && (Math.abs(x - px) + Math.abs(y - py) <= SEARCHABLE_MIN_MANHATTAN_DISTANCE
         || Math.abs(x - qx) + Math.abs(y - qy) <= SEARCHABLE_MIN_MANHATTAN_DISTANCE);
   }));
+}
+
+function searchableRetentionRank(floor: number, item: Searchable): number {
+  let hash = Math.imul((item.x + 0x9e3779b9) | 0, 0x85ebca6b);
+  hash = Math.imul(hash ^ (item.y + 0x7f4a7c15), 0xc2b2ae35);
+  return Math.imul(hash ^ (floor + 17), 0x27d4eb2d) >>> 0;
 }
 
 export function generateFloor(seed: number, floor: number, lootRng?: FloorLootRng): Floor {
@@ -467,12 +475,15 @@ function generateSearchables(
     case 0: numMimics = 2 + rng.int(2); break; // Block 13: 2-3
   }
 
-  // Place 1-2 searchables per room (except start room)
+  // Generate the historical 1-2 candidates per room so the dedicated loot
+  // stream consumes the same draws. Keep one optional container per room,
+  // except when multiple generated Mimics must be retained.
   rooms.forEach((room, roomIndex) => {
     // Skip start room only
     if (roomIndex === 0) return;
 
     const searchablesInRoom = 1 + rng.int(2); // 1-2 searchables per room
+    const roomStartIndex = searchables.length;
 
     for (let i = 0; i < searchablesInRoom; i++) {
       const [x, y] = chooseUniqueSearchablePosition(room, rng, occupiedSearchableTiles);
@@ -534,6 +545,17 @@ function generateSearchables(
         result,
         isMimic,
       });
+    }
+
+    const generatedInRoom = searchables.splice(roomStartIndex);
+    const generatedMimics = generatedInRoom.filter(item => item.isMimic);
+    if (generatedMimics.length > 0) {
+      // Preserve any Mimic roll rather than letting the density pass suppress
+      // an enemy encounter; resource probabilities are tuned for the smaller
+      // retained container population below.
+      searchables.push(...generatedMimics);
+    } else {
+      searchables.push(generatedInRoom.sort((a, b) => searchableRetentionRank(floor, a) - searchableRetentionRank(floor, b))[0]);
     }
   });
 

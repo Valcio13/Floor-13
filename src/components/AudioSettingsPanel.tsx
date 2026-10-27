@@ -14,9 +14,8 @@ type PreviewCategory = 'sfx' | 'ambience' | 'music';
 
 const VOLUMES: ReadonlyArray<{ key: VolumeKey; mute: MuteKey; label: string }> = [
   { key: 'masterVolume', mute: 'masterMuted', label: 'Master Volume' },
-  { key: 'sfxVolume', mute: 'sfxMuted', label: 'SFX Volume' },
-  { key: 'ambienceVolume', mute: 'ambienceMuted', label: 'Ambience Volume' },
-  { key: 'musicVolume', mute: 'musicMuted', label: 'Music Volume' },
+  { key: 'musicVolume', mute: 'musicMuted', label: 'Music' },
+  { key: 'sfxVolume', mute: 'sfxMuted', label: 'Sound Effects' },
 ];
 const PREVIEWS: Record<PreviewCategory, { key: string; durationMs: number }> = {
   sfx: { key: 'sfx_player_footstep_1', durationMs: 1800 },
@@ -93,6 +92,12 @@ export function AudioSettingsPanel({ onClose }: AudioSettingsPanelProps) {
     }
   };
 
+  const updateVolume = (key: VolumeKey, value: number) => {
+    // Ambient beds share the Music control while retaining their internal
+    // channel and mute state for the game mixer.
+    publish({ ...preferences, [key]: value, ...(key === 'musicVolume' ? { ambienceVolume: value } : {}) });
+  };
+
   const playPreview = async (category: PreviewCategory) => {
     stopPreview();
     const volume = effectivePreviewVolume(preferences, category);
@@ -138,17 +143,18 @@ export function AudioSettingsPanel({ onClose }: AudioSettingsPanelProps) {
             <div className="audio-setting-row" key={key}>
               <label htmlFor={key}>{label}<output htmlFor={key}>{Math.round(preferences[key] * 100)}%</output></label>
               <input id={key} type="range" min="0" max="100" step="1" value={Math.round(preferences[key] * 100)}
-                aria-label={label} onChange={event => publish({ ...preferences, [key]: Number(event.currentTarget.value) / 100 })} />
+                aria-label={label} onChange={event => updateVolume(key, Number(event.currentTarget.value) / 100)} />
               <label className="audio-mute-toggle"><input type="checkbox" checked={preferences[mute]} onChange={event => publish({ ...preferences, [mute]: event.currentTarget.checked })} /> Mute</label>
             </div>
           ))}
         </div>
         <div className="audio-preview-row" aria-label="Audio previews">
           <span>PREVIEW</span>
-          {(['sfx', 'ambience', 'music'] as const).map(category => (
+          {(['sfx', 'music'] as const).map(category => (
             <button type="button" key={category} onClick={() => void playPreview(category)}>{category.toUpperCase()}</button>
           ))}
         </div>
+        <p className="audio-routing-note">Music also controls the ambient bed.</p>
         <label className="reduced-scare-toggle">
           <input type="checkbox" checked={preferences.reduceJumpscareIntensity}
             onChange={event => publish({ ...preferences, reduceJumpscareIntensity: event.currentTarget.checked })} />

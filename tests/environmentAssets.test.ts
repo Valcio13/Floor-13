@@ -3,6 +3,7 @@ import { inflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { block13OverlayAssetAt, block13SurfaceAssetAt } from '../src/game/block13Assets';
 import { generateFloor } from '../src/core/floor';
+import { lampOpenSide, lampSpriteRotation } from '../src/game/proceduralLighting';
 import { architecturalMarkAt, floorAmbientVisibility, floorFlashlightContrast, surfaceColorGrade, tileDressingAt } from '../src/core/visualAtmosphere';
 import {
   ORDINARY_ENVIRONMENT_ASSET_MANIFEST,
@@ -20,8 +21,283 @@ import {
   resolveOrdinaryContainerTexture,
   resolveOrdinarySurfaceAsset,
 } from '../src/game/environmentAssets';
+import {
+  FLOOR13_ENVIRONMENT_APPROVED_ASSETS,
+  FLOOR13_ENVIRONMENT_ASSET_REGISTRY,
+  productionEnvironmentPlacements,
+  type ProductionEnvironmentPlacementMetrics,
+} from '../src/game/productionEnvironment';
 
 describe('ordinary authored environment assets', () => {
+  it('orients functional lamp artwork from its wall geometry across generated seeds', () => {
+    let lampCount = 0;
+    for (const floorNumber of [4, 3, 2, 1]) {
+      for (let sample = 0; sample < 12; sample++) {
+        const floor = generateFloor(0x1a6f00 + floorNumber * 97 + sample * 211, floorNumber);
+        const protectedTiles = new Set([
+          `${floor.start[0]},${floor.start[1]}`, `${floor.key[0]},${floor.key[1]}`,
+          `${floor.exit[0]},${floor.exit[1]}`, `${floor.puzzleDevice[0]},${floor.puzzleDevice[1]}`,
+          ...floor.searchables.map(item => `${item.x},${item.y}`),
+        ]);
+        const lamps = ordinaryMapDecorationPlacements(floorNumber, floor.tiles, floor.doors, protectedTiles)
+          .filter(placement => placement.asset === 'wall_lamp_01');
+        lampCount += lamps.length;
+        for (const lamp of lamps) {
+          const facing = lampOpenSide(floor.tiles, lamp.x, lamp.y);
+          expect(facing).not.toBeNull();
+          expect(Number.isFinite(lampSpriteRotation(facing))).toBe(true);
+          expect(lampOpenSide(floor.tiles, lamp.x, lamp.y)).toBe(facing);
+        }
+      }
+    }
+    expect(lampCount).toBeGreaterThan(0);
+  });
+
+  it('registers all 50 supplied crops and verifies every imported path and native size', () => {
+    const sourceManifest = JSON.parse(readFileSync(new URL('../src/game/data/floor13EnvironmentSourceManifest.json', import.meta.url), 'utf8')) as {
+      assets: Array<{ id: string; width: number; height: number }>;
+    };
+    expect(FLOOR13_ENVIRONMENT_ASSET_REGISTRY).toHaveLength(sourceManifest.assets.length);
+    expect(FLOOR13_ENVIRONMENT_ASSET_REGISTRY.map(asset => asset.id).sort()).toEqual(sourceManifest.assets.map(asset => asset.id).sort());
+    expect(FLOOR13_ENVIRONMENT_APPROVED_ASSETS).toHaveLength(10);
+    expect(FLOOR13_ENVIRONMENT_APPROVED_ASSETS.map(asset => asset.id).sort()).toEqual([
+      'armchair', 'bed', 'broken_planks', 'ceiling_lamp', 'coffee_table', 'dresser', 'rubble_pile', 'scattered_papers', 'sofa_green', 'suitcase',
+    ]);
+    expect(FLOOR13_ENVIRONMENT_ASSET_REGISTRY.find(asset => asset.id === 'scattered_papers')).toMatchObject({ displayWidth: 42, displayHeight: 10, anchor: 'center' });
+    expect(FLOOR13_ENVIRONMENT_ASSET_REGISTRY.find(asset => asset.id === 'bed')).toMatchObject({ displayWidth: 32, displayHeight: 56, anchor: 'bottom-center' });
+    expect(FLOOR13_ENVIRONMENT_ASSET_REGISTRY.find(asset => asset.id === 'sofa_green')).toMatchObject({ displayWidth: 52, displayHeight: 30, anchor: 'bottom-center' });
+    for (const asset of FLOOR13_ENVIRONMENT_ASSET_REGISTRY) {
+      const relativePath = asset.path.split('/assets/').at(-1)!;
+      const png = readFileSync(new URL(`../public/assets/${relativePath}`, import.meta.url));
+      expect(png.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+      expect(png.readUInt32BE(16)).toBe(asset.sourceWidth);
+      expect(png.readUInt32BE(20)).toBe(asset.sourceHeight);
+      if (asset.placement !== 'excluded') expect(png[25]).toBe(6);
+      else expect(asset.exclusionReason).toBeTruthy();
+    }
+  });
+
+  it('places props deterministically by floor identity without touching protected spaces or changing map geometry', () => {
+    for (const floorNumber of [4, 3, 2, 1, 0]) {
+      const floor = generateFloor(0xf1300 + floorNumber, floorNumber);
+      const protectedTiles = new Set([
+        `${floor.start[0]},${floor.start[1]}`,
+        `${floor.key[0]},${floor.key[1]}`,
+        `${floor.exit[0]},${floor.exit[1]}`,
+        `${floor.puzzleDevice[0]},${floor.puzzleDevice[1]}`,
+        ...(floor.puzzleFallbackSite ? [`${floor.puzzleFallbackSite[0]},${floor.puzzleFallbackSite[1]}`] : []),
+        ...floor.searchables.map(item => `${item.x},${item.y}`),
+      ]);
+      const reservedTiles = new Set(ordinaryMapDecorationPlacements(floorNumber, floor.tiles, floor.doors, protectedTiles).map(item => `${item.x},${item.y}`));
+      const originalTiles = JSON.stringify(floor.tiles);
+      const placements = productionEnvironmentPlacements(floorNumber, floor.tiles, floor.rooms, floor.doors, protectedTiles, reservedTiles);
+      expect(placements).toEqual(productionEnvironmentPlacements(floorNumber, floor.tiles, floor.rooms, floor.doors, protectedTiles, reservedTiles));
+      expect(JSON.stringify(floor.tiles)).toBe(originalTiles);
+      if (floorNumber !== 0) expect(placements.length).toBeGreaterThanOrEqual(1);
+      if (floorNumber === 0) expect(placements.length).toBeLessThanOrEqual(2);
+
+      const doorBuffer = new Set<string>();
+      for (const [x, y] of floor.doors) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) doorBuffer.add(`${x + dx},${y + dy}`);
+      const occupied: Array<{ left: number; top: number; right: number; bottom: number }> = [];
+      for (const placement of placements) {
+        expect(protectedTiles.has(`${placement.x},${placement.y}`)).toBe(false);
+        const asset = FLOOR13_ENVIRONMENT_ASSET_REGISTRY.find(entry => entry.id === placement.asset)!;
+        const rotated = Math.abs(Math.sin(placement.rotation)) > 0.5;
+        const baseWidth = placement.displayWidth ?? asset.displayWidth;
+        const baseHeight = placement.displayHeight ?? asset.displayHeight;
+        const width = rotated ? baseHeight : baseWidth;
+        const height = rotated ? baseWidth : baseHeight;
+        const centerX = placement.x * 32 + 16 + (placement.offsetX ?? 0);
+        const centerY = placement.y * 32 + 16 + (placement.offsetY ?? 0)
+          - (asset.anchor === 'bottom-center' ? baseHeight / 2 : 0);
+        const rect = { left: centerX - width / 2, top: centerY - height / 2, right: centerX + width / 2, bottom: centerY + height / 2 };
+        const minX = Math.floor(rect.left / 32), maxX = Math.floor((rect.right - 1) / 32);
+        const minY = Math.floor(rect.top / 32), maxY = Math.floor((rect.bottom - 1) / 32);
+        const room = placement.roomIndex >= 0 ? floor.rooms[placement.roomIndex] : undefined;
+        if (room) {
+          const aisleX = room.x + Math.floor(room.width / 2);
+          const aisleY = room.y + Math.floor(room.height / 2);
+          expect(minX <= aisleX && maxX >= aisleX).toBe(false);
+          expect(minY <= aisleY && maxY >= aisleY).toBe(false);
+          expect(rect.left).toBeGreaterThanOrEqual(room.x * 32 + 8);
+          expect(rect.right).toBeLessThanOrEqual((room.x + room.width) * 32 - 8);
+          expect(rect.top).toBeGreaterThanOrEqual(room.y * 32 + 8);
+          expect(rect.bottom).toBeLessThanOrEqual((room.y + room.height) * 32 - 8);
+        } else {
+          expect(width).toBeLessThanOrEqual(24);
+          expect(height).toBeLessThanOrEqual(10);
+          expect(floor.rooms.some(candidate => placement.x >= candidate.x && placement.x < candidate.x + candidate.width
+            && placement.y >= candidate.y && placement.y < candidate.y + candidate.height)).toBe(false);
+        }
+        for (let y = minY; y <= maxY; y++) for (let x = minX; x <= maxX; x++) {
+          expect(floor.tiles[y]?.[x]).toBe(true);
+          expect(protectedTiles.has(`${x},${y}`)).toBe(false);
+          expect(doorBuffer.has(`${x},${y}`)).toBe(false);
+          expect(protectedTiles.has(`${x},${y}`)).toBe(false);
+        }
+        for (const previous of occupied) {
+          expect(rect.left < previous.right + 8 && rect.right + 8 > previous.left && rect.top < previous.bottom + 8 && rect.bottom + 8 > previous.top).toBe(false);
+        }
+        occupied.push(rect);
+      }
+    }
+  });
+
+  it('keeps authored prop variety stable across multiple generated seeds on all five floors', () => {
+    for (const floorNumber of [4, 3, 2, 1, 0]) {
+      const sampledAssets = new Set<string>();
+      let populatedMaps = 0;
+      for (let sample = 0; sample < 8; sample++) {
+        const floor = generateFloor(0xe13000 + sample * 97 + floorNumber, floorNumber);
+        const protectedTiles = new Set([
+          `${floor.start[0]},${floor.start[1]}`,
+          `${floor.key[0]},${floor.key[1]}`,
+          `${floor.exit[0]},${floor.exit[1]}`,
+          `${floor.puzzleDevice[0]},${floor.puzzleDevice[1]}`,
+          ...(floor.puzzleFallbackSite ? [`${floor.puzzleFallbackSite[0]},${floor.puzzleFallbackSite[1]}`] : []),
+          ...floor.searchables.map(item => `${item.x},${item.y}`),
+        ]);
+        const placements = productionEnvironmentPlacements(floorNumber, floor.tiles, floor.rooms, floor.doors, protectedTiles);
+        if (placements.length > 0) populatedMaps++;
+        for (const placement of placements) sampledAssets.add(placement.asset);
+        if (floorNumber === 0) expect(placements.length).toBeLessThanOrEqual(2);
+        expect(placements).toEqual(productionEnvironmentPlacements(floorNumber, floor.tiles, floor.rooms, floor.doors, protectedTiles));
+      }
+      expect(populatedMaps).toBeGreaterThanOrEqual(2);
+      expect(sampledAssets.size).toBeGreaterThan(0);
+    }
+  });
+
+  it('furnishes about half of eligible ordinary rooms and adds sparse corridor details', () => {
+    const seeds = [0xf13001, 0xf13002, 0xf13003, 0xf13004, 0xf13005];
+    for (const floorNumber of [4, 3, 2, 1]) {
+      let eligibleRooms = 0;
+      let furnishedRooms = 0;
+      let corridorDetails = 0;
+      for (const seed of seeds) {
+        const floor = generateFloor(seed, floorNumber);
+        const protectedTiles = new Set([
+          `${floor.start[0]},${floor.start[1]}`, `${floor.key[0]},${floor.key[1]}`,
+          `${floor.exit[0]},${floor.exit[1]}`, `${floor.puzzleDevice[0]},${floor.puzzleDevice[1]}`,
+          ...(floor.puzzleFallbackSite ? [`${floor.puzzleFallbackSite[0]},${floor.puzzleFallbackSite[1]}`] : []),
+          ...floor.searchables.map(item => `${item.x},${item.y}`),
+        ]);
+        const reservedTiles = new Set(ordinaryMapDecorationPlacements(floorNumber, floor.tiles, floor.doors, protectedTiles)
+          .map(item => `${item.x},${item.y}`));
+        const metrics: ProductionEnvironmentPlacementMetrics = {
+          roomCount: 0, eligibleRoomCount: 0, attemptedFurnitureGroups: 0, successfulFurnitureGroups: 0,
+          placedProps: 0, corridorCandidates: 0, placedCorridorDetails: 0, rejectionReasons: {}, placementsByRoom: {},
+        };
+        const placements = productionEnvironmentPlacements(
+          floorNumber, floor.tiles, floor.rooms, floor.doors, protectedTiles, reservedTiles, metrics,
+        );
+        eligibleRooms += metrics.eligibleRoomCount;
+        furnishedRooms += metrics.successfulFurnitureGroups;
+        corridorDetails += metrics.placedCorridorDetails;
+        expect(metrics.roomCount).toBe(floor.rooms.length);
+        expect(metrics.placedProps).toBe(placements.length);
+        expect(metrics.placementsByRoom['-1'] ?? 0).toBe(metrics.placedCorridorDetails);
+        expect(metrics.placedCorridorDetails).toBeGreaterThan(0);
+        expect(placements).toEqual(productionEnvironmentPlacements(
+          floorNumber, floor.tiles, floor.rooms, floor.doors, protectedTiles, reservedTiles,
+        ));
+      }
+      const coverage = furnishedRooms / eligibleRooms;
+      expect(coverage, `floor ${floorNumber} furniture-room coverage`).toBeGreaterThanOrEqual(0.4);
+      expect(coverage, `floor ${floorNumber} furniture-room coverage`).toBeLessThanOrEqual(0.6);
+      expect(corridorDetails).toBe(seeds.length * 3);
+    }
+  });
+
+  it('keeps Floor 13 at no more than two isolated visual echoes', () => {
+    for (const seed of [0xf13001, 0xf13002, 0xf13003, 0xf13004, 0xf13005]) {
+      const floor = generateFloor(seed, 0);
+      const protectedTiles = new Set([
+        `${floor.start[0]},${floor.start[1]}`, `${floor.key[0]},${floor.key[1]}`,
+        `${floor.exit[0]},${floor.exit[1]}`, `${floor.puzzleDevice[0]},${floor.puzzleDevice[1]}`,
+        ...floor.searchables.map(item => `${item.x},${item.y}`),
+      ]);
+      const placements = productionEnvironmentPlacements(0, floor.tiles, floor.rooms, floor.doors, protectedTiles);
+      expect(placements.length).toBeGreaterThan(0);
+      expect(placements.length).toBeLessThanOrEqual(2);
+      expect(placements.every(item => item.cluster === 'impossible-echo')).toBe(true);
+    }
+  });
+
+  it('uses complete or partial geometry-sized furniture arrangements and excludes interactable lookalikes', () => {
+    expect(FLOOR13_ENVIRONMENT_ASSET_REGISTRY.find(asset => asset.id === 'locker_green')?.placement).toBe('excluded');
+    expect(FLOOR13_ENVIRONMENT_ASSET_REGISTRY.find(asset => asset.id === 'fuse_panel')?.placement).toBe('excluded');
+    expect(FLOOR13_ENVIRONMENT_ASSET_REGISTRY.find(asset => asset.id === 'storage_chest')?.placement).toBe('excluded');
+    expect(FLOOR13_ENVIRONMENT_ASSET_REGISTRY.find(asset => asset.id === 'bathtub')?.placement).toBe('excluded');
+    expect(FLOOR13_ENVIRONMENT_ASSET_REGISTRY.find(asset => asset.id === 'toilet')?.placement).toBe('excluded');
+
+    for (const floorNumber of [4, 3, 2, 1]) {
+      for (let sample = 0; sample < 24; sample++) {
+        const floor = generateFloor(0xc13000 + sample * 211 + floorNumber, floorNumber);
+        const protectedTiles = new Set([
+          `${floor.start[0]},${floor.start[1]}`,
+          `${floor.key[0]},${floor.key[1]}`,
+          `${floor.exit[0]},${floor.exit[1]}`,
+          `${floor.puzzleDevice[0]},${floor.puzzleDevice[1]}`,
+          ...(floor.puzzleFallbackSite ? [`${floor.puzzleFallbackSite[0]},${floor.puzzleFallbackSite[1]}`] : []),
+          ...floor.searchables.map(item => `${item.x},${item.y}`),
+        ]);
+        const placements = productionEnvironmentPlacements(floorNumber, floor.tiles, floor.rooms, floor.doors, protectedTiles);
+        const byRoom = new Map<number, typeof placements>();
+        for (const placement of placements) {
+          const roomPlacements = byRoom.get(placement.roomIndex) ?? [];
+          roomPlacements.push(placement);
+          byRoom.set(placement.roomIndex, roomPlacements);
+        }
+        expect(byRoom.size).toBeGreaterThan(0);
+        expect(byRoom.size).toBeLessThanOrEqual(floor.rooms.length + 1);
+        for (const [roomIndex, cluster] of byRoom) {
+          if (roomIndex === -1) continue;
+          const room = floor.rooms[roomIndex];
+          expect(room.width).toBeGreaterThanOrEqual(5);
+          expect(room.height).toBeGreaterThanOrEqual(4);
+          expect(new Set(cluster.map(item => item.cluster)).size).toBe(1);
+          const clusterType = cluster[0].cluster;
+          const ids = cluster.map(item => item.asset).sort();
+          if (clusterType === 'bedside') expect([
+            ['bed'], ['bed', 'dresser'], ['bed', 'dresser', 'suitcase'], ['armchair', 'suitcase'], ['dresser', 'suitcase'],
+          ]).toContainEqual(ids);
+          if (clusterType === 'lounge') expect([
+            ['sofa_green'], ['coffee_table', 'sofa_green'], ['armchair', 'coffee_table', 'sofa_green'],
+          ]).toContainEqual(ids);
+          if (clusterType === 'abandoned-corner') expect([
+            ['broken_planks'], ['rubble_pile'], ['broken_planks', 'rubble_pile'],
+          ]).toContainEqual(ids);
+
+          const aisleX = room.x + Math.floor(room.width / 2);
+          const aisleY = room.y + Math.floor(room.height / 2);
+          for (const item of cluster) {
+            const asset = FLOOR13_ENVIRONMENT_ASSET_REGISTRY.find(entry => entry.id === item.asset)!;
+            const displayWidth = item.displayWidth ?? asset.displayWidth;
+            const displayHeight = item.displayHeight ?? asset.displayHeight;
+            const centerX = item.x * 32 + 16 + (item.offsetX ?? 0);
+            const centerY = item.y * 32 + 16 + (item.offsetY ?? 0)
+              - (asset.anchor === 'bottom-center' ? displayHeight / 2 : 0);
+            const rect = {
+              left: centerX - displayWidth / 2,
+              right: centerX + displayWidth / 2,
+              top: centerY - displayHeight / 2,
+              bottom: centerY + displayHeight / 2,
+            };
+            const minX = Math.floor(rect.left / 32), maxX = Math.floor((rect.right - 1) / 32);
+            const minY = Math.floor(rect.top / 32), maxY = Math.floor((rect.bottom - 1) / 32);
+            expect(minX <= aisleX && maxX >= aisleX).toBe(false);
+            expect(minY <= aisleY && maxY >= aisleY).toBe(false);
+            expect(rect.left).toBeGreaterThanOrEqual(room.x * 32 + 8);
+            expect(rect.right).toBeLessThanOrEqual((room.x + room.width) * 32 - 8);
+            expect(rect.top).toBeGreaterThanOrEqual(room.y * 32 + 8);
+            expect(rect.bottom).toBeLessThanOrEqual((room.y + room.height) * 32 - 8);
+          }
+        }
+      }
+    }
+  });
+
   it('gives each floor a restrained material hue and reduces generic wear on the familiar and nightmare floors', () => {
     const grades = Array.from({ length: 5 }, (_, floor) => surfaceColorGrade(floor, true));
     expect(new Set(grades.map(grade => grade.tint)).size).toBe(5);

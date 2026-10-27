@@ -72,6 +72,15 @@ export const LAMP_JUMPSCARE_VARIANT_ASSETS = [
   },
 ] as const;
 
+/** Presentation-only lamp scare pacing. These values never enter simulation. */
+export const LAMP_JUMPSCARE_ROLL_MODULUS = 110;
+export const LAMP_JUMPSCARE_COOLDOWN_TICKS = 900;
+export const LAMP_JUMPSCARE_DURATION_MS = 720;
+
+export function lampJumpscareRoll(seed: number, tick: number): number {
+  return (Math.imul((seed | 0) ^ (tick | 0), 0x45d9f3b) >>> 0) % LAMP_JUMPSCARE_ROLL_MODULUS;
+}
+
 /** Selects a lamp scare composition from the presentation event identity only. */
 export function lampJumpscareAssetForEvent(eventId: number) {
   const index = Number.isFinite(eventId) ? Math.abs(Math.trunc(eventId)) : 0;
