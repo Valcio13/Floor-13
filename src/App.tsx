@@ -546,7 +546,7 @@ function GameApp() {
       <section className="title-card" aria-labelledby="game-title">
         <p className="eyebrow">HEMI ARCADE // SURVIVAL HORROR</p>
         <h1 id="game-title">FLOOR 13</h1>
-        <p className="subtitle">DESCENT INTO DARKNESS</p>
+        <p className="subtitle">THE BUILDING THAT NEVER EXISTED</p>
         <p className="premise">An unknown number sent you a single message: “Go to the fourth floor.”</p>
 
         <RunPreparationToasts stages={preparationStages} visible={status === 'starting' || Object.values(preparationStages).includes('failed')} />
