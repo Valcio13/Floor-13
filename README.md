@@ -79,15 +79,15 @@ The current balance uses a flashlight drain of 5 fixed subunits per simulation t
 Start with the [documentation index](docs/README.md).
 
 - [Gameplay and puzzle guide](docs/puzzle-guide.md)
-- [Architecture overview](ARCHITECTURE.md)
+- [Architecture overview](docs/architecture/ARCHITECTURE.md)
 - [Replay and wire-format specifications](docs/README.md#protocol-and-replay)
-- [Hemi integration and deployment](MAINNET_DEPLOYMENT.md)
+- [Hemi integration and deployment](docs/hemi/MAINNET_DEPLOYMENT.md)
 - [Run recovery](docs/run-recovery.md)
-- [Testing and release checklist](RELEASE_CHECKLIST.md)
-- [Audio, art, and asset provenance](ASSET_CREDITS.md)
+- [Testing and release checklist](docs/release/RELEASE_CHECKLIST.md)
+- [Audio, art, and asset provenance](docs/credits/ASSET_CREDITS.md)
 
 Historical audits and implementation reports remain available where they preserve useful context. Their headers identify superseded behavior; current implementation documentation is linked from the index above.
 
 ## Credits and licensing
 
-The software is MIT-licensed; see [LICENSE](LICENSE). Bundled pixel art, music, and sound effects have separate rights and attribution requirements. See [CREDITS.md](CREDITS.md), [ASSET_CREDITS.md](ASSET_CREDITS.md), [AUDIO_LICENSES.md](AUDIO_LICENSES.md), and the [third-party audio record](docs/audio/THIRD_PARTY_AUDIO.md).
+The software is MIT-licensed; see [LICENSE](LICENSE). Bundled pixel art, music, and sound effects have separate rights and attribution requirements. See [CREDITS.md](docs/credits/CREDITS.md), [ASSET_CREDITS.md](docs/credits/ASSET_CREDITS.md), [AUDIO_LICENSES.md](docs/credits/AUDIO_LICENSES.md), and the [third-party audio record](docs/audio/THIRD_PARTY_AUDIO.md).

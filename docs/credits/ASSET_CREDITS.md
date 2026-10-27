@@ -5,11 +5,11 @@ in the repository as historical notes; they do not describe the shipped art.
 
 ## Code and project license
 
-The software is licensed under the MIT License in [LICENSE](LICENSE). The
+The software is licensed under the MIT License in [LICENSE](../../LICENSE). The
 MIT license does not automatically apply to bundled artwork, audio, or other
 media. Audio rights and sources are documented separately in
 [AUDIO_LICENSES.md](AUDIO_LICENSES.md) and
-[docs/audio/THIRD_PARTY_AUDIO.md](docs/audio/THIRD_PARTY_AUDIO.md).
+[docs/audio/THIRD_PARTY_AUDIO.md](../audio/THIRD_PARTY_AUDIO.md).
 
 ## Production graphics
 

@@ -29,7 +29,7 @@ scene lifecycle; shutdown removes active sound handles and listeners.
 
 ## Assets and provenance
 
-See [AUDIO_LICENSES.md](../AUDIO_LICENSES.md) and
+See [AUDIO_LICENSES.md](credits/AUDIO_LICENSES.md) and
 [docs/audio/THIRD_PARTY_AUDIO.md](audio/THIRD_PARTY_AUDIO.md) for source pages,
 creators, licenses, modifications, and production destinations. The files in
 `public/assets/audio/` are processed derivatives. Source recordings retained

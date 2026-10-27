@@ -109,7 +109,7 @@ The production images were supplied to this repository as user-provided final as
 - The attached bundles establish how the files entered this repository, not who authored them or what rights were granted. The repository does not establish whether assets were generated, edited from third-party sources, or copied from external references.
 - Do not infer CC0, MIT, or contest-use rights from file format, pixel-art style, or prior delivery as a “production” bundle.
 - Keep the images in the working tree while rights are clarified. If the relevant rights-holder cannot grant the needed public distribution rights, commission or generate replacements under terms that expressly cover the contest, public repository, and game distribution; retain prompts/source files and term evidence.
-- Audio provenance remains documented separately in `AUDIO_LICENSES.md` and `docs/audio/THIRD_PARTY_AUDIO.md`; no bundled fonts or separate logo files were found.
+- Audio provenance remains documented separately in `docs/credits/AUDIO_LICENSES.md` and `docs/audio/THIRD_PARTY_AUDIO.md`; no bundled fonts or separate logo files were found.
 
 ## Locally authored production art (2026-10-12)
 

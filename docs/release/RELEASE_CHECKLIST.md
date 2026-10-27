@@ -50,7 +50,7 @@ but release blockers and manual verification remain.
 ## Verified in this audit
 
 - [x] Root MIT `LICENSE` is present for the software. Bundled media rights are
-  separate and are tracked in `ASSET_CREDITS.md` and audio license records.
+  separate and are tracked in `docs/credits/ASSET_CREDITS.md` and audio license records.
 - [x] Production manifests and asset tests cover loaded image/audio paths and
   native PNG dimensions/modes.
 - [x] Main menu and audio settings loaded from a local Vite production preview;

@@ -9,7 +9,7 @@ are part of this project unless a source is listed below.
 Runtime audio is processed and mixed for the game. Source pages, creators,
 licenses, and processing notes are recorded in
 [`AUDIO_LICENSES.md`](AUDIO_LICENSES.md) and
-[`docs/audio/THIRD_PARTY_AUDIO.md`](docs/audio/THIRD_PARTY_AUDIO.md).
+[`docs/audio/THIRD_PARTY_AUDIO.md`](../audio/THIRD_PARTY_AUDIO.md).
 
 Selected sources:
 

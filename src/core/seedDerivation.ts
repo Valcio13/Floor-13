@@ -13,7 +13,7 @@
  *
  * IMPORTANT: This implementation must produce IDENTICAL seeds to any other
  * implementation given the same RunManifest. The encoding specification is
- * documented in TX1_RUN_MANIFEST_SPEC.md
+ * documented in docs/specs/TX1_RUN_MANIFEST_SPEC.md
  */
 
 import { keccak256, toBytes, type Hex } from 'viem';

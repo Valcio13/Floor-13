@@ -362,7 +362,7 @@ Block 13 prioritizes **rapid prototyping and iteration** over perfection. Assets
 1. Search for CC0 assets matching art bible specs
 2. Test in-game for fit and quality
 3. Modify as needed (recolor, resize, edit)
-4. Record in ASSET_CREDITS.md with source URL
+4. Record in docs/credits/ASSET_CREDITS.md with source URL
 
 ### Custom Asset Workflow
 
@@ -384,7 +384,7 @@ Block 13 prioritizes **rapid prototyping and iteration** over perfection. Assets
 **Temporary Use Only**:
 - AI-generated sprites are placeholders
 - Must be replaced before final release
-- Clearly marked in code comments and ASSET_CREDITS.md
+- Clearly marked in code comments and docs/credits/ASSET_CREDITS.md
 
 **Generation Prompts Should Include**:
 - "pixel art, 32x32, top-down view, dark horror"
@@ -527,9 +527,9 @@ Each asset folder should contain:
 
 ---
 
-## ASSET_CREDITS.md Requirements
+## docs/credits/ASSET_CREDITS.md Requirements
 
-All external assets MUST be recorded in `ASSET_CREDITS.md` at the repository root.
+All external assets MUST be recorded in `docs/credits/ASSET_CREDITS.md`.
 
 **Required Information**:
 1. Asset name/description
@@ -575,7 +575,7 @@ When adding new art assets:
 - [ ] Anchor point is documented
 - [ ] Asset is placed in correct folder
 - [ ] `_README.md` is updated in asset folder
-- [ ] `ASSET_CREDITS.md` is updated (if external asset)
+- [ ] `docs/credits/ASSET_CREDITS.md` is updated (if external asset)
 - [ ] Asset is referenced in code/scene loader
 - [ ] In-game test confirms visual quality
 - [ ] Performance impact is acceptable
@@ -678,7 +678,7 @@ this.sys.game.scale.setZoom(2);
 A: Lore documents and some UI overlays can be higher-fidelity, but maintain the retro aesthetic. Jumpscare close-ups are intentionally high-detail for contrast.
 
 **Q: What if we can't find CC0 assets that match?**  
-A: Use CC-BY if necessary (credit in ASSET_CREDITS.md), or create placeholders and commission later.
+A: Use CC-BY if necessary (credit in docs/credits/ASSET_CREDITS.md), or create placeholders and commission later.
 
 **Q: Can we animate tiles (water, corruption, etc.)?**  
 A: Yes! Use animated tiles (Phaser supports this via Tiled). Keep frame count low (2-4 frames) for performance.
@@ -703,4 +703,4 @@ A: Avoid overly graphic gore (game is horror, not torture porn). No explicit sex
 
 **End of Art Bible**
 
-For asset submissions or questions, refer to this document and check `ASSET_CREDITS.md` for existing assets.
+For asset submissions or questions, refer to this document and check `docs/credits/ASSET_CREDITS.md` for existing assets.

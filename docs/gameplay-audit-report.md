@@ -1,6 +1,6 @@
 # Block 13 Gameplay Audit Report
 
-> **Historical audit.** Its moving-wall design recommendations describe a superseded version of gameplay. The current game uses static tile walls; see [../README.md](../README.md) and [../ARCHITECTURE.md](../ARCHITECTURE.md).
+> **Historical audit.** Its moving-wall design recommendations describe a superseded version of gameplay. The current game uses static tile walls; see [../README.md](../README.md) and [architecture/ARCHITECTURE.md](architecture/ARCHITECTURE.md).
 
 ## Executive Summary
 

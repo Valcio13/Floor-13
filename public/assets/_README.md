@@ -5,7 +5,7 @@ game. Runtime path and dimension manifests live in `src/game/` and
 `src/core/audioAssetManifest.ts`; BootScene preloads the registered assets.
 PNG assets use nearest-neighbor presentation where appropriate. Audio and
 asset rights are tracked separately in the repository-root
-`ASSET_CREDITS.md`, `AUDIO_LICENSES.md`, and `docs/audio/THIRD_PARTY_AUDIO.md`.
+`docs/credits/ASSET_CREDITS.md`, `docs/credits/AUDIO_LICENSES.md`, and `docs/audio/THIRD_PARTY_AUDIO.md`.
 
 ## Layout
 

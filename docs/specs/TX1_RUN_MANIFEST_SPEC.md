@@ -451,7 +451,7 @@ activity is low. Please wait a few moments and try again."
 - InputLogV2 and FinalStateV1 are documented separately and implemented locally.
 - An independent replay verifier, verifier signing/service, and honest-execution proof are not implemented or in the current contest flow.
 
-See [README.md](README.md) and [ARCHITECTURE.md](ARCHITECTURE.md) for current project status. Earlier implementation checklists later in this historical specification describe past work and are not current status indicators.
+See [README.md](../../README.md) and [ARCHITECTURE.md](../architecture/ARCHITECTURE.md) for current project status. Earlier implementation checklists later in this historical specification describe past work and are not current status indicators.
 
 ---
 

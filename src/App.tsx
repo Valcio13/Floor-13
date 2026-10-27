@@ -593,7 +593,7 @@ function GameApp() {
               </ul>
               <h3>Technology</h3>
               <p>Built with Phaser, React, TypeScript, Vite, and viem. Hemi run verification uses the RunRegistry contract and wallet connection supplied by the Hemi network.</p>
-              <p className="credits-note">Full source pages, creators, processing notes, and license details are retained in <strong>AUDIO_LICENSES.md</strong> and <strong>docs/audio/THIRD_PARTY_AUDIO.md</strong>.</p>
+              <p className="credits-note">Full source pages, creators, processing notes, and license details are retained in <strong>docs/credits/AUDIO_LICENSES.md</strong> and <strong>docs/audio/THIRD_PARTY_AUDIO.md</strong>.</p>
             </div>
           </section>
         </div>

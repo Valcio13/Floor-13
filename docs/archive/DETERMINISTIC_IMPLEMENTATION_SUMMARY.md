@@ -1,6 +1,6 @@
 # Deterministic Replay Implementation Summary
 
-> **Historical analysis — superseded.** Its “implementation required” status is obsolete. Deterministic simulation, replay, and FinalStateV1 are implemented; the independent verifier and TX2 are not. See [README.md](README.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
+> **Historical analysis — superseded.** Its “implementation required” status is obsolete. Deterministic simulation, replay, and FinalStateV1 are implemented; the independent verifier and TX2 are not. See [README.md](../../README.md) and [../architecture/ARCHITECTURE.md](../architecture/ARCHITECTURE.md).
 
 **Date**: 2026-09-09
 **Status**: ⚠️ **IMPLEMENTATION REQUIRED - TOO EXTENSIVE FOR SINGLE SESSION**

@@ -1,6 +1,6 @@
 # Block 13 Gameplay Audit & Polish - Summary
 
-> **Historical implementation summary.** This report describes an earlier moving-wall design. Moving walls have since been removed; see [../README.md](../README.md) and [../ARCHITECTURE.md](../ARCHITECTURE.md) for current gameplay.
+> **Historical implementation summary.** This report describes an earlier moving-wall design. Moving walls have since been removed; see [../README.md](../README.md) and [architecture/ARCHITECTURE.md](architecture/ARCHITECTURE.md) for current gameplay.
 
 **Commit**: 62a6ac6  
 **Date**: Gameplay audit pass completed

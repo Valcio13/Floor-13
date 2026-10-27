@@ -1,6 +1,6 @@
 # Current architecture
 
-This is the canonical overview of Block 13's contest architecture. The TX1, InputLogV2, and FinalStateV1 wire formats are specified in [TX1_RUN_MANIFEST_SPEC.md](TX1_RUN_MANIFEST_SPEC.md), [INPUT_LOG_V2_SPEC.md](INPUT_LOG_V2_SPEC.md), and [FINAL_STATE_V1_SPEC.md](FINAL_STATE_V1_SPEC.md).
+This is the canonical overview of Block 13's contest architecture. The TX1, InputLogV2, and FinalStateV1 wire formats are specified in [TX1_RUN_MANIFEST_SPEC.md](../specs/TX1_RUN_MANIFEST_SPEC.md), [INPUT_LOG_V2_SPEC.md](../specs/INPUT_LOG_V2_SPEC.md), and [FINAL_STATE_V1_SPEC.md](../specs/FINAL_STATE_V1_SPEC.md).
 
 ## Run, replay, and completion
 

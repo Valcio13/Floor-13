@@ -36,7 +36,7 @@ describe('release narrative and presentation polish', () => {
   it('exposes credits and keeps source attribution in the repository', () => {
     expect(app).toContain('CREDITS &amp; ATTRIBUTION');
     expect(app).toContain('AUDIO_LICENSES.md');
-    expect(readFileSync(new URL('../CREDITS.md', import.meta.url), 'utf8')).toContain('Scary Halloween');
+    expect(readFileSync(new URL('../docs/credits/CREDITS.md', import.meta.url), 'utf8')).toContain('Scary Halloween');
   });
 
   it('lets the Hemi run menu select either supported network', () => {

@@ -1,6 +1,6 @@
 # Deterministic Replay Implementation Plan
 
-> **Historical planning document — superseded.** This plan predates the completed Phaser-free authoritative simulation, InputLogV2, FinalStateV1, and current replay tests. For current status and architecture, see [README.md](README.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
+> **Historical planning document — superseded.** This plan predates the completed Phaser-free authoritative simulation, InputLogV2, FinalStateV1, and current replay tests. For current status and architecture, see [README.md](../../README.md) and [../architecture/ARCHITECTURE.md](../architecture/ARCHITECTURE.md).
 
 **Status**: IN PROGRESS
 **Goal**: Make Block 13 fully deterministic for verified replay

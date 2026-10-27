@@ -1,6 +1,6 @@
 # Deterministic Replay Implementation - COMPLETE
 
-> **Historical implementation report — superseded where it discusses verification or TX2.** Replay is implemented. The current app commits `inputHash` and FinalStateV1 through TX2 `completeRun`; it does not submit `actionHash`, and TX2 is not independent gameplay verification. See [README.md](README.md), [ARCHITECTURE.md](ARCHITECTURE.md), and the canonical format specs.
+> **Historical implementation report — superseded where it discusses verification or TX2.** Replay is implemented. The current app commits `inputHash` and FinalStateV1 through TX2 `completeRun`; it does not submit `actionHash`, and TX2 is not independent gameplay verification. See [README.md](../../README.md), [../architecture/ARCHITECTURE.md](../architecture/ARCHITECTURE.md), and the canonical format specs.
 
 **Date**: 2026-09-09
 **Status**: ✅ **IMPLEMENTED**

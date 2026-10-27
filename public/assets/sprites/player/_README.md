@@ -3,7 +3,7 @@
 > Superseded. Production player PNGs now live at
 > `../characters/player/` and are registered in `src/game/playerAssets.ts`.
 > The active assets are four 20×28 directional idle sprites plus eight
-> 20×28 walk frames, all transparent RGBA. See [ASSET_CREDITS.md](../../../../ASSET_CREDITS.md)
+> 20×28 walk frames, all transparent RGBA. See [docs/credits/ASSET_CREDITS.md](../../../../docs/credits/ASSET_CREDITS.md)
 > for current rights status. Details below are an old placeholder plan only.
 
 **Size**: 32×48 pixels  

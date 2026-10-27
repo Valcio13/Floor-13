@@ -3,7 +3,7 @@
 > Superseded. Production Stalker idle and walking frames are in
 > `../../characters/stalker/`, registered in `src/game/stalkerAssets.ts` at 32×52.
 > The descriptions below are retained as historical concept guidance only.
-> See the root [ASSET_CREDITS.md](../../../../../ASSET_CREDITS.md) for rights status.
+> See the root [docs/credits/ASSET_CREDITS.md](../../../../../docs/credits/ASSET_CREDITS.md) for rights status.
 
 **Size**: 48×64 pixels (largest enemy)  
 **Format**: PNG with transparency  
