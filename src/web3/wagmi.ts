@@ -3,7 +3,7 @@ import { injected } from 'wagmi/connectors';
 import { hemiMainnet, hemiTestnet } from './config';
 
 export const wagmiConfig = createConfig({
-  chains: [hemiTestnet, hemiMainnet],
+  chains: [hemiMainnet, hemiTestnet],
   connectors: [injected()],
   transports: {
     [hemiTestnet.id]: http('https://testnet.rpc.hemi.network/rpc'),

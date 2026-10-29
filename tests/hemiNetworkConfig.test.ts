@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { resolveHemiNetworkConfig, RUN_STARTED_EVENT_TOPIC } from '../src/web3/config';
 import { parseRunStartedRunId } from '../src/web3/eventParsing';
+import { wagmiConfig } from '../src/web3/wagmi';
 
 const testnetAddress = '0x1111111111111111111111111111111111111111';
 const mainnetAddress = '0x2222222222222222222222222222222222222222';
@@ -8,6 +9,10 @@ const player = '0x3333333333333333333333333333333333333333';
 const playerTopic = `0x${player.slice(2).padStart(64, '0')}`;
 
 describe('Hemi network configuration', () => {
+  it('uses Hemi Mainnet as the wallet default while retaining Testnet support', () => {
+    expect(wagmiConfig.chains.map(chain => chain.id)).toEqual([43111, 743111]);
+  });
+
   it('resolves isolated testnet and mainnet settings', () => {
     const testnet = resolveHemiNetworkConfig({
       VITE_HEMI_NETWORK: 'testnet',
