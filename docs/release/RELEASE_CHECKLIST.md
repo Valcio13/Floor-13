@@ -41,9 +41,11 @@ VITE_HEMI_NETWORK=mainnet
 VITE_HEMI_MAINNET_CONTRACT_ADDRESS=0x88b7Ac78c7964a2CbcFC8EC8e7bc9F8d39A3B059
 ```
 
-Without `VITE_HEMI_NETWORK=mainnet`, the application defaults to Testnet. The
-Testnet and Mainnet addresses are configured independently; never place a
-private key or seed phrase in a Vite variable.
+The app defaults to Testnet when `VITE_HEMI_NETWORK` is omitted. Production
+builds use `.env.production` to select Mainnet. Host-provided variables can
+override the file, so confirm the deployment environment does not set the
+network to Testnet. The Testnet and Mainnet addresses are configured
+independently; never place a private key or seed phrase in a Vite variable.
 
 The on-chain contract stores player-submitted TX1/TX2 commitments. It does not
 execute the game or independently prove a player's score. A non-empty

@@ -79,7 +79,7 @@ The frontend configuration maps Mainnet to the address supplied by `VITE_HEMI_MA
 
 | Variable | Purpose |
 | --- | --- |
-| `VITE_HEMI_NETWORK` | Selects `testnet` or `mainnet`. The application defaults to Testnet if omitted; production must explicitly set `VITE_HEMI_NETWORK=mainnet`. |
+| `VITE_HEMI_NETWORK` | Selects `testnet` or `mainnet`. The application defaults to Testnet if omitted; production builds use the committed `.env.production` Mainnet settings unless overridden by the host environment. |
 | `VITE_HEMI_TESTNET_CONTRACT_ADDRESS` | RunRegistry address for Hemi Testnet. |
 | `VITE_HEMI_MAINNET_CONTRACT_ADDRESS` | RunRegistry address for Hemi Mainnet. Required for a Mainnet build. |
 | `VITE_ETH_RPC_URL` | Optional Ethereum Mainnet RPC override for entropy retrieval. Public fallback endpoints are configured in the application. |

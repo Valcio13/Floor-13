@@ -31,8 +31,10 @@ not deploy contracts or broadcast transactions.
 
 The network values are maintained separately in `src/web3/config.ts` and in
 the Foundry RPC aliases. The selected frontend network is controlled by
-`VITE_HEMI_NETWORK=testnet|mainnet`. A mainnet build fails if its contract
-address is missing; it never falls back to the testnet address.
+`VITE_HEMI_NETWORK=testnet|mainnet`; development defaults to Testnet, and the
+tracked `.env.production` selects Mainnet for production builds. Host-provided
+variables override the file. A mainnet build fails if its contract address is
+missing; it never falls back to the testnet address.
 
 ## Release verification checklist
 

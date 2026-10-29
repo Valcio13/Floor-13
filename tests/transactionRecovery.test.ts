@@ -11,11 +11,11 @@ const manifest: RunManifest = {
 
 describe('onchain completion recovery guard', () => {
   it('requires the original connected account, Hemi Testnet, and no unresolved TX', () => {
-    expect(tx2SubmissionBlockReason(manifest, { connected: true, address: manifest.player, chainId: 743111 }, false)).toBeNull();
-    expect(tx2SubmissionBlockReason(manifest, { connected: false, chainId: 743111 }, false)).toMatch(/Reconnect/);
-    expect(tx2SubmissionBlockReason(manifest, { connected: true, address: `0x${'88'.repeat(20)}`, chainId: 743111 }, false)).toMatch(/started this Hemi run/);
-    expect(tx2SubmissionBlockReason(manifest, { connected: true, address: manifest.player, chainId: 1 }, false)).toMatch(/Hemi Testnet/);
-    expect(tx2SubmissionBlockReason(manifest, { connected: true, address: manifest.player, chainId: 743111 }, true)).toMatch(/unresolved/);
+    expect(tx2SubmissionBlockReason(manifest, { connected: true, address: manifest.player, chainId: 743111 }, false, 'testnet')).toBeNull();
+    expect(tx2SubmissionBlockReason(manifest, { connected: false, chainId: 743111 }, false, 'testnet')).toMatch(/Reconnect/);
+    expect(tx2SubmissionBlockReason(manifest, { connected: true, address: `0x${'88'.repeat(20)}`, chainId: 743111 }, false, 'testnet')).toMatch(/started this Hemi run/);
+    expect(tx2SubmissionBlockReason(manifest, { connected: true, address: manifest.player, chainId: 1 }, false, 'testnet')).toMatch(/Hemi Testnet/);
+    expect(tx2SubmissionBlockReason(manifest, { connected: true, address: manifest.player, chainId: 743111 }, true, 'testnet')).toMatch(/unresolved/);
     expect(tx2SubmissionBlockReason(manifest, { connected: true, address: manifest.player, chainId: 43111 }, false, 'mainnet')).toBeNull();
     expect(tx2SubmissionBlockReason(manifest, { connected: true, address: manifest.player, chainId: 743111 }, false, 'mainnet')).toMatch(/Hemi Mainnet/);
   });
